@@ -1,1 +1,26 @@
+<html>
+    <head lang="en">
+        <meta charset="UTF-8">
+        <script src='http://cdn.peerjs.com/0.3/peer.js'></script>
+        <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+        <script src="gossip.js"></script>
+    </head>
+    <body>
+        <div>
+            Hallo
+        </div>
+    </body>
+    <script>
+    
+        $(function(){
+        
+            Gossip.connect({
+                name : 'Julian',
+                host : 'localhost',
+                port : 9000
+            });
 
+        });
+
+    </script>
+</html>
