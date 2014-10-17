@@ -9,11 +9,7 @@ window.Gossip = (function(){
     return {
     
         /**
-         *  @param options {Object}{
-         *      name : {String} // unique name in the gossip network
-         *      host : {string} // IP to broker server
-         *      port : {Integer} // Port
-         *  }
+         *  @param options {Object}
          *
          */
         connect : function(options){
@@ -21,13 +17,11 @@ window.Gossip = (function(){
             if (!('name' in options)) throw "Missing parameter {name}";
             if (!('host' in options)) throw "Missing parameter {host}";
             if (!('port' in options)) throw "Missing parameter {port}";
-            console.log('connect');
             var name = options.name;
             delete options.name;
             options['path'] = '/b';
-            var peer = new Peer(name, options);
+            //var peer = new Peer(name, options);
         }
-
     };    
 
 })();
