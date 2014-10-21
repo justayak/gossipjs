@@ -20,11 +20,25 @@ window.Gossip = (function(){
     var messageID = 0;
 
     var onMessageList = [];
+    var onConnectionList = [];
 
     var peerName = null;
 
     function getMessageID() {
         return peerName + messageID;
+    };
+
+    function broadcast(message){
+        debug('start broadcast ' + JSON.stringify(message) + ' with..')
+        for(var key in others) {
+            debug('send to ' + key);
+            others[key].send(message);
+        }
+        debug("end broadcast");
+    };
+
+    function isString(myVar){
+        return (typeof myVar === 'string' || myVar instanceof String);
     };
 
     return {
@@ -66,14 +80,19 @@ window.Gossip = (function(){
                 if (! (conn.peer in others)){
                     others[conn.peer] = peer.connect(conn.peer);
                     debug('hello from {' + conn.peer + '}');
+                    onConnectionList.forEach(function(callback){
+                        callback.call(self, conn.peer);
+                    });
                 }
                 conn.on('data', function(json) {
-                    var message = JSON.parse(json);
+                    var message = json;
+                    if (isString(json)) messages = JSON.parse(json);
                     if (!(message.id in receivedMessages)) {
                         receivedMessages[message.id] = Date.now();
                         onMessageList.forEach(function(callback){
                             callback.call(self, message.txt);
                         });
+                        broadcast(message);
                     }
                 });
             });
@@ -86,6 +105,10 @@ window.Gossip = (function(){
             others[peer] = this.peer.connect(peer);
         },
 
+        onConnection : function(callback){
+            onConnectionList.push(callback);
+        },
+
 
         onMessage : function(callback){
             onMessageList.push(callback);
@@ -96,9 +119,7 @@ window.Gossip = (function(){
          *
          */
         broadcast : function(msg) {
-            for(var key in others) {
-                others[key].send(JSON.stringify({id: getMessageID() , txt: msg }));
-            }
+            broadcast({id: getMessageID() , txt: msg });
         }
     };    
 
