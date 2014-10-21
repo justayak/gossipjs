@@ -4,6 +4,12 @@
 
 var PeerServer = require('peer').PeerServer;
 
+/**
+ *
+ * @param options
+ * @returns {GossipBroker}
+ * @constructor
+ */
 function GossipBroker(options){
     if (! (this instanceof GossipBroker)) return new GossipBroker(options);
     if (typeof options === 'undefined') throw "GossipBroker needs options-parameter";
@@ -17,6 +23,10 @@ function GossipBroker(options){
     });
 };
 
+/**
+ *
+ * @param msg
+ */
 GossipBroker.prototype.debug = function(msg){
     if (this._debug) {
         console.log('[gossipjs][' + new Date().toISOString().substr(12) + ']' + msg);
