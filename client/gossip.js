@@ -25,10 +25,14 @@ window.Gossip = (function(){
     var peerName = null;
 
     function getMessageID() {
+        messageID = messageID + 1;
         return peerName + messageID;
     };
 
     function broadcast(message){
+        if(! (message.id in receivedMessages)){
+            receivedMessages[message.id] = Date.now();
+        }
         debug('start broadcast ' + JSON.stringify(message) + ' with..')
         for(var key in others) {
             debug('send to ' + key);
@@ -66,10 +70,16 @@ window.Gossip = (function(){
             var name = options.name;
             peerName = name;
             delete options.name;
+            options.debug = 1;
             options['path'] = '/b';
             debug('Establish as node {' + name + '}');
             debug('Connect to broker {' + options.host + ':' + options.port + '}');
             var peer = new Peer(name, options);
+
+            peer.on('error', function(err){
+                console.log(err);
+            });
+
             this.peer = peer;
             options.peers.forEach(function(otherPeer){
                 others[otherPeer] = peer.connect(otherPeer);
@@ -85,8 +95,9 @@ window.Gossip = (function(){
                     });
                 }
                 conn.on('data', function(json) {
+                    debug('data from ' + conn.peer);
                     var message = json;
-                    if (isString(json)) messages = JSON.parse(json);
+                    if (isString(json)) message = JSON.parse(json);
                     if (!(message.id in receivedMessages)) {
                         receivedMessages[message.id] = Date.now();
                         onMessageList.forEach(function(callback){
