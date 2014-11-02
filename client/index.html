@@ -1,9 +1,7 @@
 <html>
     <head lang="en">
         <meta charset="UTF-8">
-        <script src='http://cdn.peerjs.com/0.3/peer.js'></script>
         <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
-        <script src="gossip.js"></script>
         <script src="scamp.js"></script>
     </head>
     <body>
@@ -43,9 +41,10 @@
 
         $(function(){
 
-            Gossip.options({
+            SCAMP.options({
                 debug: true
             });
+
             $('#after').hide();
             $('#connectBtn').on('click', function(){
                 var name = $('#me').val();
@@ -53,28 +52,31 @@
                     $('#after').show();
                     $('#meFinal').html(name);
                     $('#start').hide();
-                    Gossip.init({
+                    SCAMP.init({
                         name : name,
                         host : '85.25.215.113',
                         port : 9000
+                    }, function(){
+
+                        $('#otherBtn').on('click', function(){
+                            var other = $('#other').val();
+                            if (other.length > 0) {
+                                addOther(other);
+                                Gossip.connect(other);
+                            }
+                        });
+
+                        $('#sendBtn').on('click', function(){
+                            var txt = $('#msg').val();
+                            if (txt.length > 0) {
+                                Gossip.broadcast(txt);
+                                addMessage(txt);
+                            }
+                        });
+
                     });
 
-                    $('#otherBtn').on('click', function(){
-                        var other = $('#other').val();
-                        if (other.length > 0) {
-                            addOther(other);
-                            Gossip.connect(other);
-                        }
-                    });
-
-                    $('#sendBtn').on('click', function(){
-                        var txt = $('#msg').val();
-                        if (txt.length > 0) {
-                            Gossip.broadcast(txt);
-                            addMessage(txt);
-                        }
-                    });
-
+                    /*
                     Gossip.onConnection(function(conn){
                         addOther(conn);
                     });
@@ -82,12 +84,10 @@
                     Gossip.onMessage(function(msg){
                         addMessage(msg);
                     });
+                    */
 
                 }
             });
-
-
-
 
         });
 

@@ -5,8 +5,14 @@
  */
 window.SCAMP = (function(){
 
-    var isDebugging = true;
+    var isDebugging = false;
     var isReady = true;
+    var peerName;
+    var messageID = 0;
+    function getMessageID() {
+        messageID = messageID + 1;
+        return peerName + messageID;
+    };
 
     function log(msg) {
         if (isDebugging) {
@@ -47,6 +53,24 @@ window.SCAMP = (function(){
         inject(UNDERSCORE_CDN);
     }
 
+    var MessageType = {
+        Subscription : 0,
+        Message : 1
+    };
+
+    /**
+     *
+     */
+    function createMessage(type, value){
+        return {type:type, value:value,id:getMessageID()};
+    };
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // R E L E V A N T  C O D E
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    var PEER = null;
+
     /**
      * nodes that we will send messages to
      * @type {{}}
@@ -65,14 +89,27 @@ window.SCAMP = (function(){
      */
     function onSubscription(s) {
         log("subscribe " + s);
-        _.each(partialView, function(e){
-            console.log(e);
+        _.each(partialView, function(peer){
+            peer.send(createMessage(MessageType.Subscription, s));
         });
     };
 
-
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // R E L E V A N T  C O D E  E N D
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     return {
 
+        options : function(options){
+            if (typeof options !== "undefined"){
+                isDebugging = ('debug' in options && options.debug === true);
+            }
+        },
+
+        /**
+         *
+         * @param options
+         * @param callback
+         */
         init : function(options, callback){
             if (typeof options === "undefined") throw "Missing options";
             if (!('name' in options)) throw "Missing parameter {name}";
@@ -93,8 +130,21 @@ window.SCAMP = (function(){
                 test();
 
                 function _init(){
+                    var name = options.name;
+                    peerName = name;
+                    delete options.name;
+                    options.path = "/b";
+                    log("Establish as node {" + name + "}");
+                    log("Connect to broker {" + options.host + ":" + options.port + "}");
+                    var peer = new Peer(name, options);
+                    PEER = peer;
+                    peer.on("error", function(err){
+                        log(err);
+                    });
 
-
+                    peer.on("connection", function(conn){
+                        onSubscription.call(this, conn.peer);
+                    });
 
                     callback.call(window);
                 }
