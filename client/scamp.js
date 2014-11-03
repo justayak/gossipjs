@@ -119,7 +119,9 @@ window.SCAMP = (function(){
      */
     function onForwardedSubscription(s){
         var p = 1/(1+ _.size(partialView)); // probability that s is added to this node
-        if (!(s in partialView)){
+        if (probability(p) && !(s in partialView)){
+
+            // TODO
 
         } else {
             // Choose randomly n \in PartialView
