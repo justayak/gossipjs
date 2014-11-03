@@ -65,6 +65,20 @@ window.SCAMP = (function(){
         return {type:type, value:value,id:getMessageID()};
     };
 
+    /**
+     *
+     * @param p {Number} between 1 and 0
+     */
+    function probability(p) {
+        if (p >= 1) {
+            return true;
+        } else if (p <= 0) {
+            return false;
+        } else {
+            return Math.random() > p;
+        }
+    }
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // R E L E V A N T  C O D E
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -96,6 +110,21 @@ window.SCAMP = (function(){
         var random = _.sample(partialView, c);
         for (var i = 0; i < c; i++){
             random.send(createMessage(MessageType.ForwardSubscription, s));
+        }
+    };
+
+    /**
+     *
+     * @param s
+     */
+    function onForwardedSubscription(s){
+        var p = 1/(1+ _.size(partialView)); // probability that s is added to this node
+        if (!(s in partialView)){
+
+        } else {
+            // Choose randomly n \in PartialView
+            var n = _.first(_.shuffle(partialView));
+            n.send(createMessage(MessageType.ForwardSubscription,s));
         }
     };
 
