@@ -54,7 +54,7 @@ window.SCAMP = (function(){
     }
 
     var MessageType = {
-        Subscription : 0,
+        ForwardSubscription : 0,
         Message : 1
     };
 
@@ -70,6 +70,7 @@ window.SCAMP = (function(){
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     var PEER = null;
+    var c = 5;
 
     /**
      * nodes that we will send messages to
@@ -90,8 +91,12 @@ window.SCAMP = (function(){
     function onSubscription(s) {
         log("subscribe " + s);
         _.each(partialView, function(peer){
-            peer.send(createMessage(MessageType.Subscription, s));
+            peer.send(createMessage(MessageType.ForwardSubscription, s));
         });
+        var random = _.sample(partialView, c);
+        for (var i = 0; i < c; i++){
+            random.send(createMessage(MessageType.ForwardSubscription, s));
+        }
     };
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
