@@ -75,7 +75,7 @@ window.SCAMP = (function(){
         } else if (p <= 0) {
             return false;
         } else {
-            return Math.random() > p;
+            return Math.random() < p;
         }
     }
 
@@ -105,7 +105,7 @@ window.SCAMP = (function(){
     function onSubscription(s) {
         log("subscribe " + s);
         _.each(partialView, function(peer){
-            peer.send(createMessage(MessageType.ForwardSubscription, s));
+            peer.connect(s);
         });
         var random = _.sample(partialView, c);
         for (var i = 0; i < c; i++){
@@ -122,6 +122,7 @@ window.SCAMP = (function(){
         if (probability(p) && !(s in partialView)){
 
             // TODO
+            partialView[s] = PEER.connect(s);
 
         } else {
             // Choose randomly n \in PartialView
