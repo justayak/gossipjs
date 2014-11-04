@@ -3,7 +3,11 @@
  */
 (function(Gossip){
 
+    Gossip.TMan = {
 
+
+
+    };
 
 })(typeof window.Gossip === 'undefined'?
     window.Gossip = {} : window.Gossip);
