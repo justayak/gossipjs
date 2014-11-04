@@ -2,8 +2,7 @@
     <head lang="en">
         <meta charset="UTF-8">
         <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
-        <script src="gossip_utils.js"></script>
-        <script src="gossip.js"></script>
+        <script src="scamp.js"></script>
     </head>
     <body>
         <div>
@@ -42,11 +41,7 @@
 
         $(function(){
 
-            Gossip.real();
-            Gossip.util();
-            return;
-
-            Gossip.options({
+            SCAMP.options({
                 debug: true
             });
 
@@ -57,7 +52,7 @@
                     $('#after').show();
                     $('#meFinal').html(name);
                     $('#start').hide();
-                    Gossip.init({
+                    SCAMP.init({
                         name : name,
                         host : '85.25.215.113',
                         port : 9000

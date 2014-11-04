@@ -3,8 +3,8 @@
  */
 (function(Gossip){
 
-    Gossip.real = function(){
-        console.log("lol");
+    Gossip.util = function(){
+        console.log("hi");
     }
 
 })(typeof window.Gossip === 'undefined'?
