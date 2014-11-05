@@ -61,7 +61,31 @@
         }
 
         return result;
-    }
+    };
+
+    /**
+     *
+     * @param callback {function} with param of the first node
+     * @param noPeersCallback {function} gets called when no peers are there
+     * @returns {*}
+     */
+    function selectPeer(callback, noPeersCallback){
+        var sort = _rankingFunction(profile, partialView);
+        if (sort.length === 0) noPeersCallback.call(Gossip);
+        else {
+            var fstName = sort[0];
+            var fst = partialView[fstName];
+            if (fst.node === null) {
+                fst.node = Gossip.Peer.connect(fstName);
+                fst.node.on("open", function(){
+                    // wait until the connection is established
+                    callback.call(Gossip, fst.node);
+                });
+            } else {
+                callback.call(Gossip, fst.node);
+            }
+        };
+    };
 
     Gossip.TMan = {
 
@@ -72,9 +96,9 @@
          *      profile : xxx,
          *
          *      // @param x       - my own {profile}
-         *      // @param nodes   - {Array} of { profile: {profile}, address: "addr", .. }
-         *      //                  Objects
-         *      // sort elements in right order
+         *      // @param nodes   - {Object} of {profile}'s Objects
+         *      //              -> See partial view!
+         *      // sort peer names in right order
          *      rankingFunction : function(x,nodes) {
          *
          *      }
