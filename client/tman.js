@@ -70,7 +70,7 @@
      * @returns {*}
      */
     function selectPeer(callback, noPeersCallback){
-        var sort = _rankingFunction(profile, partialView);
+        var sort = rankingFunction(profile, partialView);
         if (sort.length === 0) noPeersCallback.call(Gossip);
         else {
             var fstName = sort[0];
@@ -87,6 +87,38 @@
         };
     };
 
+    function selectView(buffer, callback, noPeersCallback) {
+        var result = {}, initCounter, key, current;
+        var sort = rankingFunction(profile, buffer);
+        if (sort.length === 0) noPeersCallback.call(Gossip);
+        else {
+            initCounter = 0;
+            for (var i = 0; i < sort.length && i < c; i++) {
+                key = sort[i];
+                result[key] = buffer[key];
+                if (result[key].node === null) {
+                    initCounter += 1;
+                }
+            }
+
+            if (initCounter > 0) {
+                for (key in result) {
+                    current = result[key];
+                    if (current.node === null) {
+                        current.node = Gossip.Peer.connect(key);
+                        current.node.on("open", function(){
+                            initCounter -= 1;
+                            if (initCounter === 0) {
+                                callback.call(Gossip, result);
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    
     Gossip.TMan = {
 
         /**
