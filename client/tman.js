@@ -5,6 +5,8 @@
  * http://www.cs.unibo.it/bison/publications/esoa05.pdf
  *
  *
+ *
+ *
  */
 (function(Gossip){
 
@@ -26,6 +28,40 @@
      * @type {number}
      */
     var c = 0;
+
+    /**
+     * List of objects to where a message will be send
+     * @type {Object}
+     * {
+     *      nodeNameA : {profile: {profile}, node : {Peer}}
+     * }
+     */
+    var partialView = {};
+
+    /**
+     * merge the local partial view with a neighbors view
+     * A possible connection to other nodes will not be established yet
+     * @param buffer {Object}
+     * {
+     *      nodeNameA : {profile},
+     *      nodeNameB : {profile},
+     *      ..
+     * }
+     */
+    function merge(buffer){
+        var result = {}, node;
+        for (node in partialView){
+            result[node] = partialView[node];
+        }
+
+        for (node in buffer){
+            if (! (node in result)){
+                result[node] = {profile: result[node], node: null};
+            }
+        }
+
+        return result;
+    }
 
     Gossip.TMan = {
 
