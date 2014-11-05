@@ -119,18 +119,13 @@
             log("Establish as node {" + name + "}");
             log("Connect to broker {" + options.host + ":" + options.port + "}");
             var peer = new Peer(name, options);
-            PEER = peer;
+            Gossip.Peer = peer;
             peer.on("error", function(err){
                 log(err);
             });
 
-            peer.on("connection", function(conn){
-                onSubscription.call(this, conn.peer);
-            });
-
             callback.call(window);
         };
-
     };
 
 })(typeof window.Gossip === 'undefined'?

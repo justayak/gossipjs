@@ -20,7 +20,7 @@
                         <span id="others"></span>
                     </div>
                     <div>
-                        <strong id="meFinal"></strong>
+                        <strong id="meFinal"></strong><br/>
                         <input id="msg"/>
                         <button id="sendBtn">send</button>
                     </div>
@@ -50,15 +50,20 @@
             $('#after').hide();
             $('#connectBtn').on('click', function(){
                 var name = $('#me').val();
+                var profile = randomInt(0,15);
                 if (name.length > 0) {
                     $('#after').show();
-                    $('#meFinal').html(name);
+                    $('#meFinal').html(name + " - " + profile);
                     $('#start').hide();
                     Gossip.init({
                         name : name,
                         host : '85.25.215.113',
                         port : 9000
                     }, function(){
+
+                        var TMan = Gossip.TMan.init({profile: profile, rankingFunction: function(x,nodes){
+                            return _.sortBy(nodes, function(node){return Math.abs(x-node.profile);});
+                        }});
 
                         $('#otherBtn').on('click', function(){
                             var other = $('#other').val();
@@ -92,6 +97,10 @@
             });
 
         });
+
+        function randomInt(min, max){
+            return Math.floor(Math.random() * (max-min+1)) + min;
+        }
 
     </script>
 </html>

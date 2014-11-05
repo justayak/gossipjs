@@ -1,5 +1,10 @@
 /**
  * Created by Julian on 11/4/2014.
+ *
+ * T-Man
+ * http://www.cs.unibo.it/bison/publications/esoa05.pdf
+ *
+ *
  */
 (function(Gossip){
 
@@ -33,6 +38,7 @@
          *      // @param x       - my own {profile}
          *      // @param nodes   - {Array} of { profile: {profile}, address: "addr", .. }
          *      //                  Objects
+         *      // sort elements in right order
          *      rankingFunction : function(x,nodes) {
          *
          *      }
