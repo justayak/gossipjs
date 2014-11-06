@@ -16,7 +16,7 @@
 
     function log(msg) {
         if (isDebugging) {
-            console.log('[scampjs][' + new Date().toISOString().substr(12) + ']' + msg);
+            console.log('[gossipjs][' + new Date().toISOString().substr(12) + ']' + msg);
         }
     };
 
@@ -142,7 +142,7 @@
                     }
                     switch (d.type){
                         case Gossip.MESSAGE_TYPE.ARE_YOU_ALIVE:
-                            fireAndForget(conn.peer, {type:MESSAGE_TYPE.I_AM_ALIVE});
+                            fireAndForget(conn.peer, {type:Gossip.MESSAGE_TYPE.I_AM_ALIVE});
                             break;
                         case Gossip.MESSAGE_TYPE.I_AM_ALIVE:
                             executePending(conn.peer, true);
@@ -192,8 +192,26 @@
         }
     };
 
+    Gossip.getOutgoings = function(){
+        return outgoings;
+    };
+
+    Gossip.broadcast = function (buffer, message) {
+        for(var key in buffer){
+            buffer[key].send(message);
+        }
+    };
+
+    Gossip.send = function (id, message) {
+        if (id in outgoings){
+            outgoings[id].send(message);
+        } else {
+            log("Cannot send message to {" + id + "}. Not available.");
+        }
+    };
+
     /**
-     * Sends a message to the id. If the ID is not connected yet, a connection
+     * Sends a message to the id. If the ID is not connected, a connection
      * try is attempt
      * @param id {String}
      * @param message {Object}
@@ -209,15 +227,21 @@
             addToPending(id,
                 function success() {
                     conn.send(message);
+                    conn.close();
                 },
                 function failure() {
                     log("fireAndForget Failed");
+                    conn.close();
                 });
         }
     };
 
     Gossip.disconnect = function(id){
-        //TODO
+        //TODO research what else must be done!
+        if (id in outgoings) {
+            outgoings[id].close();
+            delete outgoings[id];
+        }
     };
 
 
@@ -278,7 +302,7 @@
             setTimeout(function(){
                 // TIMEOUT
                 executePending(peerName, false);
-            },1000*10);
+            },1000*3);
         }
     };
 

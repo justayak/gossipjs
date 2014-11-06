@@ -65,16 +65,11 @@
                             return _.sortBy(nodes, function(node){return Math.abs(x-node.profile);});
                         }});
 
-                        var m = Gossip.Peer.connect("Julian");
-                        m.on("open", function () {
-
-                            //m.send("hallo welt");
-
-                            setTimeout(function(){
-                                console.log("second try");
-                                //m.send("hiii");
-                            }, 5000);
-                        })
+                        Gossip.testAlive("Julian", function alive(){
+                            console.log("ALIVE");
+                        }, function notAlive() {
+                            console.log("NOT ALIVE");
+                        });
 
 
                         $('#otherBtn').on('click', function(){
