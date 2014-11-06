@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>QUnit Example</title>
+    <link rel="stylesheet" href="//code.jquery.com/qunit/qunit-1.15.0.css">
+</head>
+<body>
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+<script src="gossip_utils.js"></script>
+<script src="tman.js"></script>
+<script src="//code.jquery.com/qunit/qunit-1.15.0.js"></script>
+<script>
+    // Un
+    Gossip.init({name:"Julian", host:"85.25.215.113", port:9000}, function(){
+
+        function ranking(x, list){
+            for(var key in list)  list[key].key = key;
+            return _.map(
+                    _.sortBy(list, function(e){return Math.abs(x- e.profile);}),
+                function(e) {return e.key;});
+        };
+
+        var profile = 5;
+        var testNodes = {A: {profile:3}, B: {profile:2}, C:{profile:9}, D:{profile:7}};
+
+
+        QUnit.test("Ranking Function", function(assert){
+            var sort = ranking(profile,testNodes);
+            assert.deepEqual(sort, ["A","D","B","C"], "Line ranking function");
+        });
+
+
+    });
+
+
+
+</script>
+</body>
+</html>

@@ -148,8 +148,12 @@
             c = options.partialViewSize;
 
             return {
-
-
+                selectView : selectView,
+                selectPeer : selectPeer,
+                merge : merge,
+                getPartialView : function(){
+                    return partialView;
+                }
 
             }
         }
