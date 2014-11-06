@@ -143,7 +143,7 @@
                 switch (err.type){
                     case "peer-unavailable":
                         var peer = err.message.substr(26); //TODO that's bad...
-
+                        executePending(peer, false);
                         break;
                 }
                 log(err);
@@ -163,12 +163,23 @@
         if (id in outgoings){
             success.call(Gossip, outgoings[id]);
         } else {
-            outgoings[id] = Gossip.peer.connect(id);
+            addToPending(id,
+                function succ() {
+                    success.call(Gossip, outgoings[id]);
+            },  function fail() {
+                    delete outgoings[id];
+                    failure.call(Gossip);
+            });
+            var conn = Gossip.peer.connect(id);
+            outgoings[id] = conn;
+            conn.on("open", function(){
+                executePending(id, true);
+            });
         }
     };
 
     Gossip.disconnect = function(id){
-
+        //TODO
     };
 
 
@@ -180,6 +191,38 @@
      * }
      */
     var pendingTestAlive = {};
+
+    /**
+     *
+     * @param id {String}
+     * @param success {function}
+     * @param failure {function}
+     */
+    function addToPending(id, success, failure) {
+        if (id in pendingTestAlive) {
+            pendingTestAlive[id].success.push(success);
+            pendingTestAlive[id].failure.push(failure);
+        } else {
+            pendingTestAlive[id] = {
+                success : [success],
+                failure : [failure]
+            };
+        }
+    };
+
+    /**
+     *
+     * @param id {String}
+     * @param success {Boolean}
+     */
+    function executePending(id, success) {
+        if (id in pendingTestAlive) {
+            var callbacks = success ? pendingTestAlive[id].success : pendingTestAlive[id].failure;
+            callbacks.forEach(function(c){
+                c.call(Gossip);
+            });
+        }
+    };
 
     /**
      *
