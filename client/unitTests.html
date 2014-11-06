@@ -24,14 +24,53 @@
         };
 
         var profile = 5;
-        var testNodes = {A: {profile:3}, B: {profile:2}, C:{profile:9}, D:{profile:7}};
+        var testNodes = {A: {profile:3,node:90}, B: {profile:2,node:91}, C:{profile:9,node:92}, D:{profile:7,node:93}};
 
+        QUnit.module("A");
+        QUnit.asyncTest("T-Man: No-Peers-Callbacks", function(assert){
+            //expect(1);
 
-        QUnit.test("Ranking Function", function(assert){
+            // ===========================================
+
+            var sort = ranking(profile,testNodes);
+            assert.deepEqual(sort, ["A","D","B","C"], "Line ranking function");
+
+            // ===========================================
+
+            var tMan = Gossip.TMan.init({profile:profile, rankingFunction:ranking});
+            tMan.selectPeer(
+                function onSuccess() {
+                    assert.ok(false, "Select Peer calls the wrong Callback");
+                    QUnit.start();
+                }, function onNoPeers() {
+                    assert.ok(true, "No Peers");
+                    QUnit.start();
+            });
+
+            // ===========================================
+            // fill up partialView
+
+            var partialView = tMan.getPartialView();
+            for (var key in testNodes){
+                partialView[key] = testNodes[key];
+            }
+
+            var tMan = Gossip.TMan.init({profile:profile, rankingFunction:ranking});
+            tMan.selectPeer(
+                    function onSuccess(e) {
+                        assert.ok(e===90, "Found Peer A");
+                        QUnit.start();
+                    }, function onNoPeers() {
+                        assert.ok(false, "Now some peers must be found");
+                        QUnit.start();
+                    });
+        });
+
+        QUnit.module("B");
+        QUnit.test("T-Man: Ranking Function", function(assert){
             var sort = ranking(profile,testNodes);
             assert.deepEqual(sort, ["A","D","B","C"], "Line ranking function");
         });
-
 
     });
 

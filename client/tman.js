@@ -145,6 +145,7 @@
 
             profile = options.profile;
             rankingFunction = options.rankingFunction;
+            partialView = {}; // reset
             c = options.partialViewSize;
 
             return {
