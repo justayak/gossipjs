@@ -6,5 +6,13 @@
 
 
 
+    /**
+     *
+     * @type {LPBCast}
+     */
+    Gossip.LPBCast = {
+
+    };
+
 })(typeof window.Gossip === 'undefined'?
     window.Gossip = {} : window.Gossip);

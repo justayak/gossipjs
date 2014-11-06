@@ -65,6 +65,12 @@
                             return _.sortBy(nodes, function(node){return Math.abs(x-node.profile);});
                         }});
 
+                        var m = Gossip.Peer.connect("Julian");
+                        m.on("open", function () {
+                            m.send("hallo welt");
+                        })
+
+
                         $('#otherBtn').on('click', function(){
                             var other = $('#other').val();
                             if (other.length > 0) {
