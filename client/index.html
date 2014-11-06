@@ -4,6 +4,7 @@
         <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
         <script src="gossip_utils.js"></script>
         <script src="gossip.js"></script>
+        <script src="lpbCast.js"></script>
         <script src="tman.js"></script>
     </head>
     <body>
@@ -61,16 +62,25 @@
                         port : 9000
                     }, function(){
 
+                        /*
                         var TMan = Gossip.TMan.init({profile: profile, rankingFunction: function(x,nodes){
                             return _.sortBy(nodes, function(node){return Math.abs(x-node.profile);});
                         }});
+                        */
 
-                        Gossip.testAlive("Julian", function alive(){
-                            console.log("ALIVE");
-                        }, function notAlive() {
-                            console.log("NOT ALIVE");
+                        Gossip.testAlive("Julian", function succ(){
+                            console.log("try connect");
+                            Gossip.connect("Julian", function succ(){
+                                console.log("send stuff");
+                                Gossip.send("Julian", {type:99, msg:"hallo welt"});
+                            }, function fail(){
+                                console.log("failed to connect");
+                            });
+
+
+                        }, function fail(){
+                            console.log("nop..");
                         });
-
 
                         $('#otherBtn').on('click', function(){
                             var other = $('#other').val();

@@ -147,6 +147,11 @@
                         case Gossip.MESSAGE_TYPE.I_AM_ALIVE:
                             executePending(conn.peer, true);
                             break;
+                        default:
+                            for (var i = 0; i < onMessages.length; i++){
+                                onMessages[i].call(Gossip, conn.peer, d);
+                            }
+                            break;
                     }
                 });
 
@@ -167,6 +172,16 @@
         };
     };
 
+    var onMessages = [];
+
+    /**
+     *
+     * @param callback {function} Key {String}, message {object}
+     */
+    Gossip.onMessage = function(callback){
+        onMessages.push(callback);
+    };
+
     /**
      * List of Peers that we send data to
      * @type {Object}
@@ -184,7 +199,7 @@
                     delete outgoings[id];
                     failure.call(Gossip);
             });
-            var conn = Gossip.peer.connect(id);
+            var conn = Gossip.Peer.connect(id);
             outgoings[id] = conn;
             conn.on("open", function(){
                 executePending(id, true);
@@ -278,12 +293,14 @@
      * @param success {Boolean}
      */
     function executePending(id, success) {
+        console.log("exec " + id + " - " + success + " :: " + (id in pendingTestAlive));
         if (id in pendingTestAlive) {
             var callbacks = success ? pendingTestAlive[id].success : pendingTestAlive[id].failure;
+            delete pendingTestAlive[id];
             callbacks.forEach(function(c){
                 c.call(Gossip);
             });
-            delete pendingTestAlive[id];
+
         }
     };
 

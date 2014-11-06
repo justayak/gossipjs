@@ -5,6 +5,12 @@
 (function(Gossip){
 
 
+    /**
+     *
+     */
+    Gossip.onMessage(function(id, message){
+        console.log("msg from " + id + "  ", message)
+    });
 
     /**
      *
