@@ -128,12 +128,6 @@
             var peer = new Peer(name, options);
             Gossip.Peer = peer;
 
-
-            peer.on("open", function(id){
-                console.log(id);
-            });
-
-
             peer.on("connection", function(conn){
 
                 conn.on("data", function (d) {
@@ -293,7 +287,6 @@
      * @param success {Boolean}
      */
     function executePending(id, success) {
-        console.log("exec " + id + " - " + success + " :: " + (id in pendingTestAlive));
         if (id in pendingTestAlive) {
             var callbacks = success ? pendingTestAlive[id].success : pendingTestAlive[id].failure;
             delete pendingTestAlive[id];
@@ -328,6 +321,12 @@
         I_AM_ALIVE : 1
     }
 
+
+    Gossip.utils = {
+        randomInt : function(min,max){
+            return (Math.floor(Math.random() * (max - min + 1)) + min)|0;
+        }
+    };
 
 
 })(typeof window.Gossip === 'undefined'?
