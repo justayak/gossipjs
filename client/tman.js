@@ -10,6 +10,12 @@
  */
 (function(Gossip){
 
+    var MESSAGE_TYPE = {
+        BUFFER : 0|0
+    }
+
+    var instance = null;
+
     /**
      * This profile will be used for the ranking
      * function
@@ -41,6 +47,7 @@
     /**
      * merge the local partial view with a neighbors view
      * A possible connection to other nodes will not be established yet
+     * @param partialView {Object}
      * @param buffer {Object}
      * {
      *      nodeNameA : {profile},
@@ -48,7 +55,7 @@
      *      ..
      * }
      */
-    function merge(buffer){
+    function merge(partialView, buffer){
         var result = {}, node;
         for (node in partialView){
             result[node] = partialView[node];
@@ -79,18 +86,27 @@
                 fst.node = Gossip.Peer.connect(fstName);
                 fst.node.on("open", function(){
                     // wait until the connection is established
-                    callback.call(Gossip, fst.node);
+                    callback.call(instance, fst.node);
                 });
             } else {
-                callback.call(Gossip, fst.node);
+                callback.call(instance, fst.node);
             }
         };
+        return instance;
     };
 
+    /**
+     *
+     * @param buffer {Object} created from merging the local partial view with the view
+     *                        of another node
+     * @param callback {function} gets called when the selection is done
+     * @param noPeersCallback {function} gets called when no peers are available
+     * @returns {*}
+     */
     function selectView(buffer, callback, noPeersCallback) {
         var result = {}, initCounter, key, current;
         var sort = rankingFunction(profile, buffer);
-        if (sort.length === 0) noPeersCallback.call(Gossip);
+        if (sort.length === 0) noPeersCallback.call(instance);
         else {
             initCounter = 0;
             for (var i = 0; i < sort.length && i < c; i++) {
@@ -109,14 +125,41 @@
                         current.node.on("open", function(){
                             initCounter -= 1;
                             if (initCounter === 0) {
-                                callback.call(Gossip, result);
+                                callback.call(instance, result);
                             }
                         });
                     }
                 }
             }
         }
-        return result;
+        return instance;
+    }
+
+    /**
+     *
+     */
+    function active() {
+
+    };
+
+    /**
+     *
+     */
+    function passive() {
+
+    }
+
+    /**
+     *
+     * @param buffer {Object} composed of partial view and ourselfs
+     * @param p {Peer} that will receive our partial view
+     */
+    function sendBufferTo(buffer, p){
+        var view = [];
+        p.send({
+            type: MESSAGE_TYPE.BUFFER,
+            data : view
+        });
     }
     
     Gossip.TMan = {
@@ -148,7 +191,7 @@
             partialView = {}; // reset
             c = options.partialViewSize;
 
-            return {
+            instance = {
                 selectView : selectView,
                 selectPeer : selectPeer,
                 merge : merge,
@@ -156,7 +199,8 @@
                     return partialView;
                 }
 
-            }
+            };
+            return instance;
         }
 
 
