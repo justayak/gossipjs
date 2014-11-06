@@ -4,7 +4,7 @@
  */
 (function(Gossip){
 
-    var deltaT = 3000;
+    var deltaT = 500; // 1/2 Sec
 
     /**
      * fixed size of the cache
@@ -13,7 +13,8 @@
     var c = 10;
 
     /**
-     * Get news from the agent system
+     * Get news from the agent system.
+     * If there are no news, return null
      * @type {function}
      */
     var getNews = null;
@@ -23,6 +24,16 @@
      * @type {function}
      */
     var newsUpdate = null;
+
+
+    function heartbeat(){
+        var news = getNews();
+        if (news !== null) {
+
+        }
+    };
+
+    setInterval(heartbeat, deltaT);
 
     /**
      *
