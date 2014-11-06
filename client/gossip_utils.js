@@ -5,6 +5,10 @@
 
     // ** HELPER **
 
+    function isString(myVar) {
+        return (typeof myVar === 'string' || myVar instanceof String);
+    }
+
     var isDebugging = false;
     function isReady() {
         return hasPeerjs() && hasUnderscore();
@@ -130,10 +134,20 @@
             });
 
 
-            peer.on("connection", function(e){
+            peer.on("connection", function(conn){
 
-                e.on("data", function (d) {
-                    console.log("received: ", d);
+                conn.on("data", function (d) {
+                    if (isString(d)){
+                        d = JSON.parse(d);
+                    }
+                    switch (d.type){
+                        case Gossip.MESSAGE_TYPE.ARE_YOU_ALIVE:
+                            fireAndForget(conn.peer, {type:MESSAGE_TYPE.I_AM_ALIVE});
+                            break;
+                        case Gossip.MESSAGE_TYPE.I_AM_ALIVE:
+                            executePending(conn.peer, true);
+                            break;
+                    }
                 });
 
             });
@@ -175,6 +189,30 @@
             conn.on("open", function(){
                 executePending(id, true);
             });
+        }
+    };
+
+    /**
+     * Sends a message to the id. If the ID is not connected yet, a connection
+     * try is attempt
+     * @param id {String}
+     * @param message {Object}
+     */
+    function fireAndForget(id, message) {
+        if (id in outgoings) {
+            outgoings[id].send(message);
+        } else {
+            var conn = Gossip.Peer.connect(id);
+            conn.on("open", function(){
+                executePending(id, true);
+            });
+            addToPending(id,
+                function success() {
+                    conn.send(message);
+                },
+                function failure() {
+                    log("fireAndForget Failed");
+                });
         }
     };
 
@@ -221,6 +259,7 @@
             callbacks.forEach(function(c){
                 c.call(Gossip);
             });
+            delete pendingTestAlive[id];
         }
     };
 
@@ -231,10 +270,24 @@
      * @param notAlive {function}
      */
     Gossip.testAlive = function (peerName, alive, notAlive) {
-        if (!(peerName in pendingTestAlive)){
-            //Gossip.Peer.
+        addToPending(peerName, alive, notAlive);
+        if (peerName in outgoings){
+            outgoings[peerName].send({type:Gossip.MESSAGE_TYPE.ARE_YOU_ALIVE});
+        } else {
+            fireAndForget(peerName, {type:Gossip.MESSAGE_TYPE.ARE_YOU_ALIVE});
+            setTimeout(function(){
+                // TIMEOUT
+                executePending(peerName, false);
+            },1000*10);
         }
     };
+
+    Gossip.MESSAGE_TYPE = {
+        ARE_YOU_ALIVE : 0,
+        I_AM_ALIVE : 1
+    }
+
+
 
 })(typeof window.Gossip === 'undefined'?
     window.Gossip = {} : window.Gossip);

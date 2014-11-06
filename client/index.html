@@ -67,7 +67,13 @@
 
                         var m = Gossip.Peer.connect("Julian");
                         m.on("open", function () {
-                            m.send("hallo welt");
+
+                            //m.send("hallo welt");
+
+                            setTimeout(function(){
+                                console.log("second try");
+                                //m.send("hiii");
+                            }, 5000);
                         })
 
 
