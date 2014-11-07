@@ -3,7 +3,7 @@
  */
 
 var PeerServer = require('peer').PeerServer;
-var Essz = require("essz");
+var Essz = require("./essz");
 
 /**
  *
