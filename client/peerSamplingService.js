@@ -50,21 +50,33 @@
         var sort1 = _.sortBy(view1, function(e){return e.hopCount;});
         var sort2 = _.sortBy(view2, function(e){return e.hopCount;});
         var total = sort1.length + sort2.length;
-        var i = 0;
         var result = [];
-        for (;i < total && i < c; i++) {
+        var tempLookup = {};
+
+        function shiftInto(from, to) {
+            var e = from.shift();
+            if (e.addr in tempLookup) {
+                if (e.hopCount > tempLookup[e.addr]){
+                    return false;
+                }
+            }
+            tempLookup[e.addr] = e.hopCount;
+            to.push(e);
+            return true;
+        }
+        while (result.length < c && (sort1.length > 0 || sort2.length > 0)) {
             var left = sort1[0];
             var right = sort2[0];
             if (isDef(left) && isDef(right)) {
                 if (left.hopCount < right.hopCount){
-                    result.push(sort1.shift());
+                    shiftInto(sort1,result);
                 } else {
-                    result.push(sort2.shift());
+                    shiftInto(sort2,result);
                 }
             } else if (isDef(right)){
-                result.push(sort2.shift());
+                shiftInto(sort2,result);
             } else {
-                result.push(sort1.shift());
+                shiftInto(sort1,result);
             }
         }
         return result;
