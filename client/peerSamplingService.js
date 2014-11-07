@@ -103,8 +103,8 @@
         var s = _.size(view);
         if (s > 0) {
             return singleValue ?
-                _.sample(view).node :
-                _.pluck(_.sample(view, s > c ? c : s), "node");
+                _.sample(view).addr :
+                _.pluck(_.sample(view, s > c ? c : s), "addr");
         }
         return null;
     };
@@ -119,8 +119,8 @@
         var s = _.size(view);
         if (s > 0) {
             return singleValue ?
-                _.min(view, function (e) {return e.hopCount;}).node :
-                _.pluck(_.first(_.sortBy(view, function(e){return e.hopCount;}), s > c ? c : s),"node");
+                _.min(view, function (e) {return e.hopCount;}).addr :
+                _.pluck(_.first(_.sortBy(view, function(e){return e.hopCount;}), s > c ? c : s),"addr");
         }
         return null;
     };
@@ -135,8 +135,8 @@
         var s = _.size(view);
         if (s > 0) {
             return singleValue ?
-                _.max(view, function (e) {return e.hopCount;}).node :
-                _.pluck(_.first(_.sortBy(view, function(e){return -(e.hopCount);}), s > c ? c : s),"node");;
+                _.max(view, function (e) {return e.hopCount;}).addr :
+                _.pluck(_.first(_.sortBy(view, function(e){return -(e.hopCount);}), s > c ? c : s),"addr");;
         }
         return null;
     };

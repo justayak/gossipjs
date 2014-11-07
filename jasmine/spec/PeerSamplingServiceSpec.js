@@ -14,14 +14,14 @@ describe("PeerSamplingService", function () {
             {addr:"F", hopCount:29},
             {addr:"G", hopCount:3},
             {addr:"H", hopCount:1}];
-        view1 = [{addr:"A", hopCount:5,node:"hallo1"},
-            {addr:"B", hopCount:2,node:"hallo2"},
-            {addr:"C", hopCount:12,node:"hallo3"},
-            {addr:"D", hopCount:88,node:"hallo4"}];
+        view1 = [{addr:"A", hopCount:5},
+            {addr:"B", hopCount:2},
+            {addr:"C", hopCount:12},
+            {addr:"D", hopCount:88}];
         view3 = [
-            {addr:"A", hopCount:1,node:"xx1"},
-            {addr:"Q", hopCount:4,node:"xx2"},
-            {addr:"B", hopCount:7,node:"xx3"}
+            {addr:"A", hopCount:1},
+            {addr:"Q", hopCount:4},
+            {addr:"B", hopCount:7}
         ];
     });
 
@@ -50,31 +50,31 @@ describe("PeerSamplingService", function () {
 
     it("should select the right single head", function(){
         var result = PSS.inner.head(view1, true);
-        expect(result).toEqual("hallo2");
+        expect(result).toEqual("B");
     });
 
     it("should select the right single tail", function(){
         var result = PSS.inner.tail(view1, true);
-        expect(result).toEqual("hallo4");
+        expect(result).toEqual("D");
     });
 
     it("should select the right head (lower bond)", function(){
         var result = PSS.inner.head(view3);
-        expect(result).toEqual(["xx1","xx2","xx3"]);
+        expect(result).toEqual(["A","Q","B"]);
     });
 
     it("should select the right tail (lower bond)", function(){
         var result = PSS.inner.tail(view3);
-        expect(result).toEqual(["xx3","xx2","xx1"]);
+        expect(result).toEqual(["B","Q","A"]);
     });
 
     it("should select the right head (upper bond)", function(){
         var result = PSS.inner.head(PSS.inner.merge(view1, view3));
-        expect(result).toEqual(["xx1","hallo2","xx2", "hallo3", "hallo4"]);
+        expect(result).toEqual(["A","B","Q", "C", "D"]);
     });
 
     it("should select the right tail (upper bond)", function(){
         var result = PSS.inner.tail(PSS.inner.merge(view1, view3));
-        expect(result).toEqual(["hallo4","hallo3","xx2", "hallo2", "xx1"]);
+        expect(result).toEqual(["D","C","Q", "B", "A"]);
     });
 });
