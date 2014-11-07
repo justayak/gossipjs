@@ -5,7 +5,7 @@
 
     Gossip.isDefined = function (e) {
         return e !== null && typeof e !== "undefined";
-    }
+    };
 
     // ** HELPER **
 
@@ -187,21 +187,36 @@
     var outgoings = {};
 
     Gossip.connect = function(id, success, failure){
-        if (id in outgoings){
-            success.call(Gossip, outgoings[id]);
+        if (Array.isArray(id)){
+            var pending = id.length;
+            id.forEach(function(peer){
+                Gossip.connect(peer, function succ(){
+                    pending -= 1;
+                    if (pending === 0) {
+                        success.call(Gossip);
+                    }
+                }, function fail(){
+                    pending -= 1;
+                    failure.call(Gossip, peer); // notify user about failed peers
+                });
+            });
         } else {
-            addToPending(id,
-                function succ() {
-                    success.call(Gossip, outgoings[id]);
-            },  function fail() {
-                    delete outgoings[id];
-                    failure.call(Gossip);
-            });
-            var conn = Gossip.Peer.connect(id);
-            outgoings[id] = conn;
-            conn.on("open", function(){
-                executePending(id, true);
-            });
+            if (id in outgoings) {
+                success.call(Gossip, outgoings[id]);
+            } else {
+                addToPending(id,
+                    function succ() {
+                        success.call(Gossip, outgoings[id]);
+                    }, function fail() {
+                        delete outgoings[id];
+                        failure.call(Gossip);
+                    });
+                var conn = Gossip.Peer.connect(id);
+                outgoings[id] = conn;
+                conn.on("open", function () {
+                    executePending(id, true);
+                });
+            }
         }
     };
 
