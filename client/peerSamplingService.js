@@ -54,10 +54,16 @@
         for (;i < total && i < c; i++) {
             var left = sort1[0];
             var right = sort2[0];
-            if ((isDef(left) && isDef(right) && sort1[0].hopCount < sort2[0].hopCount) || isDef(left)) {
-                result.push(sort1.shift());
-            } else {
+            if (isDef(left) && isDef(right)) {
+                if (left.hopCount < right.hopCount){
+                    result.push(sort1.shift());
+                } else {
+                    result.push(sort2.shift());
+                }
+            } else if (isDef(right)){
                 result.push(sort2.shift());
+            } else {
+                result.push(sort1.shift());
             }
         }
         return result;
@@ -66,8 +72,11 @@
     /**
      *
      */
-    function init() {
-
+    function init(options) {
+        if (Gossip.isDefined(options)) {
+            T = ("T" in options) ? options.T : T;
+            c = ("c" in options) ? options.c : c;
+        }
     };
 
     /**
@@ -81,7 +90,11 @@
     Gossip.PeerSamplingService = {
 
         init : init,
-        getPeers : getPeers
+        getPeers : getPeers,
+
+        inner : {
+            merge : merge
+        }
 
     };
 
