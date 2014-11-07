@@ -49,7 +49,6 @@
         var isDef = Gossip.isDefined;
         var sort1 = _.sortBy(view1, function(e){return e.hopCount;});
         var sort2 = _.sortBy(view2, function(e){return e.hopCount;});
-        var total = sort1.length + sort2.length;
         var result = [];
         var tempLookup = {};
 
@@ -92,6 +91,41 @@
         }
     };
 
+    // Peer Selection
+
+    /**
+     * @param view {[Node]}
+     * @returns {Peer}
+     */
+    function rand(view){
+        if (_.size(view) > 0) {
+            return _.shuffle(view)[0].node;
+        }
+        return null;
+    };
+
+    /**
+     * @param view {[Node]}
+     * @returns {Peer}
+     */
+    function head(view) {
+        if (_.size(view) > 0) {
+            return _.min(view, function (e) {return e.hopCount;}).node;
+        }
+        return null;
+    };
+
+    /**
+     * @param view {[Node]}
+     * @returns {Peer}
+     */
+    function tail(view) {
+        if (_.size(view) > 0) {
+            return _.max(view, function (e) {return e.hopCount;}).node;
+        }
+        return null;
+    };
+
     /**
      * Returns a list of peer addresses if the group contains more than one node.
      * The returned addresses are a sample drawn from the group.
@@ -107,7 +141,9 @@
 
         inner : {
             merge : merge,
-            increaseHopCount : increaseHopCount
+            increaseHopCount : increaseHopCount,
+            head : head,
+            tail : tail
         }
 
     };

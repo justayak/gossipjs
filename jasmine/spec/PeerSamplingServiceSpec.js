@@ -14,10 +14,10 @@ describe("PeerSamplingService", function () {
             {addr:"F", hopCount:29},
             {addr:"G", hopCount:3},
             {addr:"H", hopCount:1}];
-        view1 = [{addr:"A", hopCount:5},
-            {addr:"B", hopCount:2},
-            {addr:"C", hopCount:12},
-            {addr:"D", hopCount:88}];
+        view1 = [{addr:"A", hopCount:5,node:"hallo1"},
+            {addr:"B", hopCount:2,node:"hallo2"},
+            {addr:"C", hopCount:12,node:"hallo3"},
+            {addr:"D", hopCount:88,node:"hallo4"}];
         view3 = [
             {addr:"A", hopCount:1},
             {addr:"Q", hopCount:4},
@@ -46,5 +46,15 @@ describe("PeerSamplingService", function () {
         expect(result["B"].hopCount).toEqual(3);
         expect(result["C"].hopCount).toEqual(13);
         expect(result["D"].hopCount).toEqual(89);
+    });
+
+    it("should select the right head", function(){
+        var result = PSS.inner.head(view1);
+        expect(result).toEqual("hallo2");
+    });
+
+    it("should select the right tail", function(){
+        var result = PSS.inner.tail(view1);
+        expect(result).toEqual("hallo4");
     });
 });
