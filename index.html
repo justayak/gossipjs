@@ -63,25 +63,8 @@
                         bootstrapPort: 9001
                     }, function(){
 
-                        /*
-                        var TMan = Gossip.TMan.init({profile: profile, rankingFunction: function(x,nodes){
-                            return _.sortBy(nodes, function(node){return Math.abs(x-node.profile);});
-                        }});
-                        */
-
-                        Gossip.testAlive("Julian", function succ(){
-                            console.log("try connect");
-                            Gossip.connect("Julian", function succ(){
-                                console.log("send stuff");
-                                Gossip.send("Julian", {type:99, msg:"hallo welt"});
-                            }, function fail(){
-                                console.log("failed to connect");
-                            });
 
 
-                        }, function fail(){
-                            console.log("nop..");
-                        });
 
                         $('#otherBtn').on('click', function(){
                             var other = $('#other').val();

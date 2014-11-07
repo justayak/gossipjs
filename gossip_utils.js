@@ -113,7 +113,7 @@
         console.log(options.host);
         TxtLoader.get("http://" + options.host + ":" + options.bootstrapPort, {
             success: function(txt){
-                log("bootrapping: " + txt);
+                log("bootstrapping: " + txt);
             },
             failure: function (statusCode) {
                 log("Bootstrapping failed! " + statusCode);
