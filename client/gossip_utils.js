@@ -96,6 +96,7 @@
         if (!('name' in options)) throw "Missing parameter {name}";
         if (!('host' in options)) throw "Missing parameter {host}";
         if (!('port' in options)) throw "Missing parameter {port}";
+        if (!('bootstrapPort' in options)) throw "Missing parameter {bootstrapPort}";
         if (!('peers' in options)) options['peers'] = [];
 
         if (!hasUnderscore()){
@@ -108,6 +109,15 @@
             log("injecting peerjs...");
             inject(PEERJS_CDN);
         }
+
+        TxtLoader.get(options.host + ":" + options.bootstrapPort, {
+            success: function(txt){
+                log("bootrapping: " + txt);
+            },
+            failure: function (statusCode) {
+                log("Bootstrapping failed! " + statusCode);
+            }
+        });
 
         if (isReady()){
             _init();
