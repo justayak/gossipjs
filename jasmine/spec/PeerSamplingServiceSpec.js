@@ -19,9 +19,9 @@ describe("PeerSamplingService", function () {
             {addr:"C", hopCount:12,node:"hallo3"},
             {addr:"D", hopCount:88,node:"hallo4"}];
         view3 = [
-            {addr:"A", hopCount:1},
-            {addr:"Q", hopCount:4},
-            {addr:"B", hopCount:7}
+            {addr:"A", hopCount:1,node:"xx1"},
+            {addr:"Q", hopCount:4,node:"xx2"},
+            {addr:"B", hopCount:7,node:"xx3"}
         ];
     });
 
@@ -48,13 +48,33 @@ describe("PeerSamplingService", function () {
         expect(result["D"].hopCount).toEqual(89);
     });
 
-    it("should select the right head", function(){
-        var result = PSS.inner.head(view1);
+    it("should select the right single head", function(){
+        var result = PSS.inner.head(view1, true);
         expect(result).toEqual("hallo2");
     });
 
-    it("should select the right tail", function(){
-        var result = PSS.inner.tail(view1);
+    it("should select the right single tail", function(){
+        var result = PSS.inner.tail(view1, true);
         expect(result).toEqual("hallo4");
+    });
+
+    it("should select the right head (lower bond)", function(){
+        var result = PSS.inner.head(view3);
+        expect(result).toEqual(["xx1","xx2","xx3"]);
+    });
+
+    it("should select the right tail (lower bond)", function(){
+        var result = PSS.inner.tail(view3);
+        expect(result).toEqual(["xx3","xx2","xx1"]);
+    });
+
+    it("should select the right head (upper bond)", function(){
+        var result = PSS.inner.head(PSS.inner.merge(view1, view3));
+        expect(result).toEqual(["xx1","hallo2","xx2", "hallo3", "hallo4"]);
+    });
+
+    it("should select the right tail (upper bond)", function(){
+        var result = PSS.inner.tail(PSS.inner.merge(view1, view3));
+        expect(result).toEqual(["hallo4","hallo3","xx2", "hallo2", "xx1"]);
     });
 });

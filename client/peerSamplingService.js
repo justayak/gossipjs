@@ -91,37 +91,52 @@
         }
     };
 
-    // Peer Selection
+    // Peer Selection policies
 
     /**
      * @param view {[Node]}
+     * @param singleValue {Boolean} determines if we should return a single value or
+     *                              a list with at most c elements
      * @returns {Peer}
      */
-    function rand(view){
-        if (_.size(view) > 0) {
-            return _.shuffle(view)[0].node;
+    function rand(view, singleValue){
+        var s = _.size(view);
+        if (s > 0) {
+            return singleValue ?
+                _.sample(view).node :
+                _.pluck(_.sample(view, s > c ? c : s), "node");
         }
         return null;
     };
 
     /**
      * @param view {[Node]}
+     * @param singleValue {Boolean} determines if we should return a single value or
+     *                              a list with at most c elements
      * @returns {Peer}
      */
-    function head(view) {
-        if (_.size(view) > 0) {
-            return _.min(view, function (e) {return e.hopCount;}).node;
+    function head(view, singleValue) {
+        var s = _.size(view);
+        if (s > 0) {
+            return singleValue ?
+                _.min(view, function (e) {return e.hopCount;}).node :
+                _.pluck(_.first(_.sortBy(view, function(e){return e.hopCount;}), s > c ? c : s),"node");
         }
         return null;
     };
 
     /**
      * @param view {[Node]}
+     * @param singleValue {Boolean} determines if we should return a single value or
+     *                              a list with at most c elements
      * @returns {Peer}
      */
-    function tail(view) {
-        if (_.size(view) > 0) {
-            return _.max(view, function (e) {return e.hopCount;}).node;
+    function tail(view, singleValue) {
+        var s = _.size(view);
+        if (s > 0) {
+            return singleValue ?
+                _.max(view, function (e) {return e.hopCount;}).node :
+                _.pluck(_.first(_.sortBy(view, function(e){return -(e.hopCount);}), s > c ? c : s),"node");;
         }
         return null;
     };
