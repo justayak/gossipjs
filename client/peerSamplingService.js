@@ -36,6 +36,7 @@
             current = view[addr];
             current.hopCount += 1;
         }
+        return view;
     };
 
     /**
@@ -93,7 +94,8 @@
         getPeers : getPeers,
 
         inner : {
-            merge : merge
+            merge : merge,
+            increaseHopCount : increaseHopCount
         }
 
     };
