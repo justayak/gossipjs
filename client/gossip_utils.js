@@ -312,7 +312,6 @@
             callbacks.forEach(function(c){
                 c.call(Gossip);
             });
-
         }
     };
 
