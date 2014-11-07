@@ -110,7 +110,8 @@
             inject(PEERJS_CDN);
         }
 
-        TxtLoader.get(options.host + ":" + options.bootstrapPort, {
+        console.log(options.host);
+        TxtLoader.get("http://" + options.host + ":" + options.bootstrapPort, {
             success: function(txt){
                 log("bootrapping: " + txt);
             },

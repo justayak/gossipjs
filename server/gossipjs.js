@@ -24,10 +24,11 @@ function GossipBroker(options){
     this.connectedNodes = new Essz.HashList();
 
     http.createServer(function (req, res) {
+        console.log("http input!");
         res.writeHead(200, {'Content-Type': 'text/plain'});
         res.end("Hello world!");
     }).listen(options.bootstrapPort);
-    console.log("Http bootstrap server on port " + options.bootstrapPort);
+    this.debug("Http bootstrap server on port " + options.bootstrapPort);
 
     server.on('connection', function(id){
         self.debug("connect: " + id);
