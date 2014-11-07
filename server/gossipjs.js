@@ -18,8 +18,12 @@ function GossipBroker(options){
     var server = new PeerServer({port:options.port, path: '/b'});
     var self = this;
     this.debug('Gossip broker on port ' + options.port);
+
     server.on('connection', function(id){
-        self.debug(id);
+        self.debug("connect: " + id);
+    });
+    server.on('disconnect', function (id) {
+        self.debug("disconnect:" + id);
     });
 };
 
