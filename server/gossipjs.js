@@ -3,6 +3,7 @@
  */
 
 var PeerServer = require('peer').PeerServer;
+var Essz = require("essz");
 
 /**
  *
@@ -18,12 +19,15 @@ function GossipBroker(options){
     var server = new PeerServer({port:options.port, path: '/b'});
     var self = this;
     this.debug('Gossip broker on port ' + options.port);
+    this.connectedNodes = new Essz.HashList();
 
     server.on('connection', function(id){
         self.debug("connect: " + id);
+        this.connectedNodes.put(id,id);
     });
     server.on('disconnect', function (id) {
         self.debug("disconnect:" + id);
+        this.connectedNodes.remove(id);
     });
 };
 
