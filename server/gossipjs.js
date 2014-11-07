@@ -23,11 +23,11 @@ function GossipBroker(options){
 
     server.on('connection', function(id){
         self.debug("connect: " + id);
-        this.connectedNodes.put(id,id);
+        self.connectedNodes.put(id,id);
     });
     server.on('disconnect', function (id) {
         self.debug("disconnect:" + id);
-        this.connectedNodes.remove(id);
+        self.connectedNodes.remove(id);
     });
 };
 
