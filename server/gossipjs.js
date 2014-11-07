@@ -27,7 +27,7 @@ function GossipBroker(options){
         res.writeHead(200, {'Content-Type': 'text/plain'});
         res.end("Hello world!");
     }).listen(options.bootstrapPort);
-    log("Http bootstrap server on port " + options.bootstrapPort);
+    console.log("Http bootstrap server on port " + options.bootstrapPort);
 
     server.on('connection', function(id){
         self.debug("connect: " + id);
