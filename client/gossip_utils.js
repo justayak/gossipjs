@@ -3,6 +3,10 @@
  */
 (function(Gossip){
 
+    Gossip.isDefined = function (e) {
+        return e === null || typeof e === "undefined";
+    }
+
     // ** HELPER **
 
     function isString(myVar) {
