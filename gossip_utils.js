@@ -163,6 +163,8 @@
      ==========================================================================================
      */
 
+    var connectors = [];
+
     /**
      * @param peer {Peer}
      * @type {Connector}
@@ -184,6 +186,7 @@
                 }
             });
         });
+        connectors.push(this);
 
         /**
          * @type {function} (id {String})
@@ -255,6 +258,51 @@
         return false;
     };
 
+    //TODO on-update: make the function lookup this object too to
+    //TODO find already open connections
+    var fireAndForgetItems = {
+        /*addr: {node: {Peer}, ts:{Date in ms}*/
+    };
+
+    /**
+     * Checks, if fire-and-Forget items are too old and remove them if so
+     */
+    function cleanFireAndForgetItems(){
+        var addr, ffI = fireAndForgetItems, tDiff, i = 0, L = connectors.length;
+        var _connectors = connectors;
+        var TIME_THRESHOLD = 1000 * 60 * 5; // 2 minutes
+        var now = Date.now();
+        for(addr in ffI) {
+            tDiff = now - ffI[addr].ts;
+            if (tDiff > TIME_THRESHOLD) {
+                // is there a reference to any other connector?
+                for(;i<L;i++){
+                    if (_connectors[i].contains(addr)){
+                        ffI[addr].ts = Date.now();  // reset the timeout
+                        return;
+                    }
+                }
+                ffI[addr].close();
+                delete ffI[addr];
+            }
+        }
+    };
+    setInterval(cleanFireAndForgetItems, 1000*60); // every minute
+
+    /**
+     * @param id {String}
+     * @returns {boolean} True, when item is in view, else false
+     */
+    Connector.prototype.contains = function (id) {
+        var i = 0, L = this.view.length, view = this.view;
+        for(;i<L;i++){
+            if (id === view[i].addr){
+                return true;
+            }
+        }
+        return false;
+    };
+
     /**
      * Sends a message to a specific node. This node does not
      * necessarily needs to be member of the current view
@@ -265,20 +313,27 @@
     Connector.prototype.fireAndForget = function(id, type, message) {
         log("Fire-and-Forget: Target: {" + id + "}");
         var view = this.view, L = this.view.length, i = 0, current;
-        for(;i<L;i++){
-            current = view[i];
-            if (current.addr === id) {
-                current.node.send(createMessage(type, message));
-                return;
+        if (id in fireAndForgetItems) {
+            fireAndForgetItems[id].node.send(createMessage(type, message));
+            fireAndForgetItems[id].ts = Date.now(); // update timestamp
+        } else {
+            // see, if we already use this id
+            for(;i<L;i++){
+                current = view[i];
+                if (current.addr === id) {
+                    current.node.send(createMessage(type, message));
+                    return;
+                }
             }
+            // we need to open a connection:
+            var conn = this.peer.connect(id);
+            conn.on("open", function(){
+                fireAndForgetItems[conn.peer] = {node:conn, ts: Date.now()};
+                conn.send(createMessage(type, message));
+                //conn.close();
+                //TODO figure out if we need to do more stuff to close it..
+            });
         }
-        // we need to open a connection:
-        var conn = this.peer.connect(id);
-        conn.on("open", function(){
-            conn.send(createMessage(type, message));
-            conn.close();
-            //TODO figure out if we need to do more stuff to close it..
-        });
     };
 
     /**

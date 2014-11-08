@@ -77,26 +77,44 @@
 
     var MESSAGE_TYPE = {
         SEND_BUFFER: 0,
-        REQUEST_BUFFER : 1
+        REQUEST_BUFFER : 1,
+        REQUEST_BUFFER_ANSWER : 2
     };
 
     /**
      * "Active" Thread that runs forever in T time slices
      */
     function active() {
-        var p, myDescriptor, buffer;
+        var p, myDescriptor, buffer = [];
         if (hasPeers()) {
             p = selectionPolicy.selectPeer();
-
             if (push){
-
                 myDescriptor = {addr: myDescriptor, hopCount: 0};
                 buffer = merge(view, [myDescriptor]);
-                //connector.fireAndForget(p, MESSAGE_TYPE.SEND_BUFFER, )
+            }
+            // When push=False we send an empty view to trigger a response
+            connector.fireAndForget(
+                p, MESSAGE_TYPE.SEND_BUFFER, serialize(buffer));
 
+            if (pull) {
+                //TODO we might have a problem here when 2 requests are started..
+                connector.fireAndForget(p, MESSAGE_TYPE.REQUEST_BUFFER);
             }
         }
     };
+
+    /**
+     * Response to a REQUEST_BUFFER-Message
+     * @param view
+     */
+    function onPull(viewP) {
+        viewP = increaseHopCount(viewP);
+        var buffer = merge(viewP, view);
+        var newView = selectionPolicy.selectView(buffer);
+        connector.update(newView, function (v) {
+            view = v;
+        });
+    }
 
     /**
      * Increment the hop count of every element in the view
@@ -247,6 +265,20 @@
             // Nodes, that couldn't be reached are removed
             view = availableView;
             callback.call(this);
+        });
+
+        connector.onMessage(function(id, type, payload){
+             switch (type) {
+                 case MESSAGE_TYPE.REQUEST_BUFFER_ANSWER:
+                     onPull.call(connector,deserialize(payload));
+                     break;
+                 case MESSAGE_TYPE.REQUEST_BUFFER:
+                     connector.fireAndForget(id, MESSAGE_TYPE.REQUEST_BUFFER_ANSWER, serialize(view));
+                     break;
+                 default:
+
+                     break;
+             }
         });
     };
 
