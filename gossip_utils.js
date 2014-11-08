@@ -135,222 +135,19 @@
 
         function _init(){
             var name = options.name;
-            peerName = name;
             delete options.name;
             options.path = "/b";
             log("Establish as node {" + name + "}");
             log("Connect to broker {" + options.host + ":" + options.port + "}");
             var peer = new Peer(name, options);
             Gossip.Peer = peer;
-
-            peer.on("connection", function(conn){
-
-                conn.on("data", function (d) {
-                    if (isString(d)){
-                        d = JSON.parse(d);
-                    }
-                    switch (d.type){
-                        case Gossip.MESSAGE_TYPE.ARE_YOU_ALIVE:
-                            fireAndForget(conn.peer, {type:Gossip.MESSAGE_TYPE.I_AM_ALIVE});
-                            break;
-                        case Gossip.MESSAGE_TYPE.I_AM_ALIVE:
-                            executePending(conn.peer, true);
-                            break;
-                        default:
-                            for (var i = 0; i < onMessages.length; i++){
-                                onMessages[i].call(Gossip, conn.peer, d);
-                            }
-                            break;
-                    }
-                });
-
-            });
-
-
             peer.on("error", function(err){
-                /*
-                switch (err.type){
-                    case "peer-unavailable":
-                        var peer = err.message.substr(26); //TODO that's bad...
-                        executePending(peer, false);
-                        break;
-                }
-                */
                 log(err);
             });
 
             callback.call(window);
         };
     };
-
-    var onMessages = [];
-
-    /**
-     *
-     * @param callback {function} Key {String}, message {object}
-     */
-    Gossip.onMessage = function(callback){
-        onMessages.push(callback);
-    };
-
-    /**
-     * List of Peers that we send data to
-     * @type {Object}
-     */
-    var outgoings = {};
-
-    Gossip.connect = function(id, success, failure){
-        if (Array.isArray(id)){
-            var pending = id.length;
-            id.forEach(function(peer){
-                Gossip.connect(peer, function succ(){
-                    pending -= 1;
-                    if (pending === 0) {
-                        success.call(Gossip);
-                    }
-                }, function fail(){
-                    pending -= 1;
-                    failure.call(Gossip, peer); // notify user about failed peers
-                });
-            });
-        } else {
-            if (id in outgoings) {
-                success.call(Gossip, outgoings[id]);
-            } else {
-                addToPending(id,
-                    function succ() {
-                        success.call(Gossip, outgoings[id]);
-                    }, function fail() {
-                        delete outgoings[id];
-                        failure.call(Gossip);
-                    });
-                var conn = Gossip.Peer.connect(id);
-                outgoings[id] = conn;
-                conn.on("open", function () {
-                    executePending(id, true);
-                });
-            }
-        }
-    };
-
-    Gossip.getOutgoings = function(){
-        return outgoings;
-    };
-
-    Gossip.broadcast = function (buffer, message) {
-        for(var key in buffer){
-            buffer[key].send(message);
-        }
-    };
-
-    Gossip.send = function (id, message) {
-        if (id in outgoings){
-            outgoings[id].send(message);
-        } else {
-            log("Cannot send message to {" + id + "}. Not available.");
-        }
-    };
-
-    /**
-     * Sends a message to the id. If the ID is not connected, a connection
-     * try is attempt
-     * @param id {String}
-     * @param message {Object}
-     */
-    function fireAndForget(id, message) {
-        if (id in outgoings) {
-            outgoings[id].send(message);
-        } else {
-            var conn = Gossip.Peer.connect(id);
-            conn.on("open", function(){
-                executePending(id, true);
-            });
-            addToPending(id,
-                function success() {
-                    conn.send(message);
-                    conn.close();
-                },
-                function failure() {
-                    log("fireAndForget Failed");
-                    conn.close();
-                });
-        }
-    };
-
-    Gossip.disconnect = function(id){
-        //TODO research what else must be done!
-        if (id in outgoings) {
-            outgoings[id].close();
-            delete outgoings[id];
-        }
-    };
-
-
-    /**
-     *
-     * @type {Object} {
-     *      NodeID : { success: [callbacks], failure: [callbacks] },
-     *      ....
-     * }
-     */
-    var pendingTestAlive = {};
-
-    /**
-     *
-     * @param id {String}
-     * @param success {function}
-     * @param failure {function}
-     */
-    function addToPending(id, success, failure) {
-        if (id in pendingTestAlive) {
-            pendingTestAlive[id].success.push(success);
-            pendingTestAlive[id].failure.push(failure);
-        } else {
-            pendingTestAlive[id] = {
-                success : [success],
-                failure : [failure]
-            };
-        }
-    };
-
-    /**
-     *
-     * @param id {String}
-     * @param success {Boolean}
-     */
-    function executePending(id, success) {
-        if (id in pendingTestAlive) {
-            var callbacks = success ? pendingTestAlive[id].success : pendingTestAlive[id].failure;
-            delete pendingTestAlive[id];
-            callbacks.forEach(function(c){
-                c.call(Gossip);
-            });
-        }
-    };
-
-    /**
-     *
-     * @param peerName {String}
-     * @param alive {function}
-     * @param notAlive {function}
-     */
-    Gossip.testAlive = function (peerName, alive, notAlive, outgoings) {
-        addToPending(peerName, alive, notAlive);
-        if (peerName in outgoings){
-            outgoings[peerName].send({type:Gossip.MESSAGE_TYPE.ARE_YOU_ALIVE});
-        } else {
-            fireAndForget(peerName, {type:Gossip.MESSAGE_TYPE.ARE_YOU_ALIVE});
-            setTimeout(function(){
-                // TIMEOUT
-                executePending(peerName, false);
-            },1000*3);
-        }
-    };
-
-    Gossip.MESSAGE_TYPE = {
-        ARE_YOU_ALIVE : 0,
-        I_AM_ALIVE : 1
-    }
 
 
     Gossip.utils = {
@@ -372,6 +169,20 @@
     var Connector = Gossip.Connector = function (peer) {
         this.peer = peer;
         this.view = null;
+        this.onMessagesCallback = [];
+        var self = this;
+        peer.on("connection", function(conn){
+            conn.on("data", function (d) {
+                var i = 0;
+                var cb = self.onMessagesCallback, L = cb.length;
+                if (isString(d)){
+                    d = JSON.parse(d);
+                }
+                for(;i < L; i++ ){
+                    cb[i].call(self, conn.peer, d);
+                }
+            });
+        });
 
         /**
          * @type {function} (id {String})
@@ -396,6 +207,19 @@
         });
     };
 
+    /**
+     *
+     * @param callback
+     */
+    Connector.prototype.onMessage = function (callback) {
+        this.onMessagesCallback.push(callback);
+    };
+
+    /**
+     * Removes a node from the Connector
+     * @param id {String}
+     * @returns {boolean} True when removal was successful, otherwise false
+     */
     Connector.prototype.remove = function (id) {
         var view = this.view, L = this.view.length, current;
         for (var i = 0; i < L; i++) {
@@ -412,6 +236,24 @@
     };
 
     /**
+     * Send a message to a node
+     * @param id {String}
+     * @param message {Object}
+     * @returns {boolean} True when send and false otherwise
+     */
+    Connector.prototype.send = function (id, message) {
+        var view = this.view, L = this.view.length, i = 0, current;
+        for(;i < L; i++){
+            current = view[i];
+            if (current.addr === id) {
+                current.node.send(message);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    /**
      * Views layout MUST consist of the following elements:
      * [
      *      { addr: {String}},
@@ -421,10 +263,11 @@
      * @param callback {function}
      */
     Connector.prototype.update = function(view, callback){
+        if (this._notifyUpdateAboutFail !== null) throw "Concurrent update running!";
         //TODO close the connections that are not used anymore!
         //TODO make sure that the connections are gc'd!
         //TODO put a timeout
-        var peer = this.peer;
+        var peer = this.peer, self = this;
         this.view = view;
         var i = 0, current, expectedCallbacks = 0;
 
@@ -434,7 +277,8 @@
         function countDown() {
             expectedCallbacks = expectedCallbacks - 1;
             if (expectedCallbacks === 0) {
-                callback.call(this);
+                self._notifyUpdateAboutFail = null; // reset
+                callback.call(self, self.view);
             }
         }
         this._notifyUpdateAboutFail = countDown;
