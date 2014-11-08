@@ -111,20 +111,23 @@
         }
 
         console.log(options.host);
+        var bootstraped = false;
         TxtLoader.get("http://" + options.host + ":" + options.bootstrapPort, {
             success: function(txt){
                 log("bootstrapping: " + txt);
+                bootstraped = true;
             },
             failure: function (statusCode) {
                 log("Bootstrapping failed! " + statusCode);
+                bootstraped = true;
             }
         });
 
-        if (isReady()){
+        if (isReady() && bootstraped){
             _init();
         } else {
             function test() {
-                if (isReady()) {
+                if (isReady() && bootstraped) {
                     _init();
                 } else {
                     setTimeout(test, 100);

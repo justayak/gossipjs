@@ -64,36 +64,16 @@
                     }, function(){
 
 
+                        var PSS = Gossip.PeerSamplingService;
+                        PSS.init({
 
+                        }, function(){
 
-                        $('#otherBtn').on('click', function(){
-                            var other = $('#other').val();
-                            if (other.length > 0) {
-                                addOther(other);
-                                Gossip.connect(other);
-                            }
                         });
 
-                        $('#sendBtn').on('click', function(){
-                            var txt = $('#msg').val();
-                            if (txt.length > 0) {
-                                Gossip.broadcast(txt);
-                                addMessage(txt);
-                            }
-                        });
+
 
                     });
-
-                    /*
-                    Gossip.onConnection(function(conn){
-                        addOther(conn);
-                    });
-
-                    Gossip.onMessage(function(msg){
-                        addMessage(msg);
-                    });
-                    */
-
                 }
             });
 

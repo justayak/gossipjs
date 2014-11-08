@@ -275,7 +275,7 @@
                 }) : [];
             policy = ("policy" in options) ?
                 options.policy : DEFAULT_POLICY;
-            myAddress = options.addr;
+            myAddress = peer.id;
 
             setInterval(active, T);
             setInterval(passive, 1000/10); // 1/10 sec
