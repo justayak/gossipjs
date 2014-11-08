@@ -186,6 +186,7 @@
         this.view = null;
         this.onMessagesCallback = [];
         this.onFireAndForgetFailedCallback = [];
+        this.onRemoveCallbacks = [];
         var self = this;
         peer.on("connection", function(conn){
             conn.on("data", function (d) {
@@ -214,6 +215,28 @@
                 }
             });
         });
+
+        /*
+            Test every 2 seconds if our view is still reachable and if not: remove the nodes
+         */
+        this.testThread = setInterval(function(){
+            // Test all elements in the view
+            var view = self.view;
+            var i = 0, L = view.length, current;
+            for(;i<L;i++) {
+                current = view[i];
+                self.test(current.addr, success, failure);
+            }
+            function success(){};
+            function failure(id){
+                self.remove(id);
+                var i = 0, L = self.onRemoveCallbacks.length, cbs = self.onRemoveCallbacks;
+                for(;i<L;i++) {
+                    cbs[i].call(self, id);
+                }
+            };
+
+        }, 1000 * 2); // every 2 sec
         connectors.push(this);
 
         /**
@@ -254,6 +277,15 @@
      */
     Connector.prototype.onFail = function(cb){
         this.onFireAndForgetFailedCallback.push(cb);
+    };
+
+    /**
+     * Gets called when the Connector must remove an element because it
+     * got unreachable
+     * @param callback {function}
+     */
+    Connector.prototype.onRemove = function (callback) {
+        this.onRemoveCallbacks.push(callback);
     };
 
     /**
