@@ -110,12 +110,13 @@
             inject(PEERJS_CDN);
         }
 
-        console.log(options.host);
         var bootstraped = false;
+        var bootstrap = "[]";
         TxtLoader.get("http://" + options.host + ":" + options.bootstrapPort, {
             success: function(txt){
                 log("bootstrapping: " + txt);
                 bootstraped = true;
+                bootstrap = txt;
             },
             failure: function (statusCode) {
                 log("Bootstrapping failed! " + statusCode);
@@ -143,13 +144,21 @@
             log("Establish as node {" + name + "}");
             log("Connect to broker {" + options.host + ":" + options.port + "}");
             var peer = new Peer(name, options);
-            console.log(peer);
             Gossip.Peer = peer;
             peer.on("error", function(err){
                 log(err);
             });
 
-            callback.call(window);
+            var bootstrapNodes = [], U, i = 0, L;
+            if (bootstrap !== "[]") {
+                U = bootstrap.replace("[","").replace("]","").split(",");
+                L = U.length;
+                for(;i<L;i++){
+                    bootstrapNodes.push(U[i]);
+                }
+            }
+
+            callback.call(window, bootstrapNodes);
         };
     };
 

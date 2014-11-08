@@ -61,13 +61,15 @@
                         host : '85.25.215.113',
                         port : 9000,
                         bootstrapPort: 9001
-                    }, function(){
+                    }, function(bootstrap){
 
 
                         var PSS = Gossip.PeerSamplingService;
                         PSS.init({
-
+                            bootstrap : bootstrap
                         }, function(){
+
+                            observeConnector(PSS.inner.connector);
 
                         });
 
@@ -78,6 +80,19 @@
             });
 
         });
+
+        function observeConnector(connector, domID){
+            setInterval(function(){
+                var view = connector.view;
+                var i = 0, L = view.length;
+                var data = "";
+                for (;i<L;i++) {
+                    data += JSON.stringify(view[i], function(key,v){return (key === "node") ? "node" : v;});
+                    data += "<br/>";
+                }
+                $("#" + domID).html(data);
+            }, 250);
+        };
 
         function randomInt(min, max){
             return Math.floor(Math.random() * (max-min+1)) + min;

@@ -439,6 +439,7 @@
         getPeers : getPeers,
 
         inner : {
+            connector: connector,
             merge : merge,
             increaseHopCount : increaseHopCount,
             head : head,
