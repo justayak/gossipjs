@@ -1,3 +1,65 @@
+function executeCallback(id, message, callbacks){
+    if (id in Gossip.Peer.callbacks){
+        var callbacks = Gossip.Peer.callbacks[id];
+        for (var i = 0; i < callbacks.length; i++) {
+            callbacks[i].call(this, message);
+        }
+    }
+};
+
+function openConnection(conn){
+    setTimeout(function(){
+        executeCallback("open", conn.id, conn.callbacks);
+    },100);
+};
+
+Gossip.Peer = {
+    connect : function(id){
+
+        /**
+         * Connection
+         */
+        var conn = {
+            callbacks : [],
+            on : function(id, callback){
+                var callbacks = this.callbacks;
+                if (id in callbacks) {
+                    callbacks[id].push(callback);
+                } else {
+                    callbacks[id] = [callback];
+                }
+            },
+            close : function(){
+                console.log("closing {" + this.id + "}")
+            },
+            id : id
+        };
+
+        console.log("Dummy peer connect to {" + id + "}");
+        if (Math.random() > 0.2){
+            openConnection(conn);
+        } else {
+            setTimeout(function(){
+                executeCallback("error", {
+                    type: "peer-unavailable",
+                    message: "aaaaaaaaaaaaaaaaaaaaaaaaaa" + id},Gossip.Peer.callbacks);
+            },100);
+        }
+
+        return conn;
+    },
+
+    callbacks : {},
+    on : function(id, callback){
+        var callbacks = this.callbacks;
+        if (id in callback) {
+            callbacks[id].push(callback);
+        } else {
+            callbacks[id] = [callback];
+        }
+    }
+};
+
 /**
  * Created by Julian on 11/7/2014.
  */

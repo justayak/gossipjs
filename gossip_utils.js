@@ -168,12 +168,14 @@
 
 
             peer.on("error", function(err){
+                /*
                 switch (err.type){
                     case "peer-unavailable":
                         var peer = err.message.substr(26); //TODO that's bad...
                         executePending(peer, false);
                         break;
                 }
+                */
                 log(err);
             });
 
@@ -332,7 +334,7 @@
      * @param alive {function}
      * @param notAlive {function}
      */
-    Gossip.testAlive = function (peerName, alive, notAlive) {
+    Gossip.testAlive = function (peerName, alive, notAlive, outgoings) {
         addToPending(peerName, alive, notAlive);
         if (peerName in outgoings){
             outgoings[peerName].send({type:Gossip.MESSAGE_TYPE.ARE_YOU_ALIVE});
@@ -356,6 +358,105 @@
             return (Math.floor(Math.random() * (max - min + 1)) + min)|0;
         }
     };
+
+    /*
+     ==========================================================================================
+     C O N N E C T O R
+     ==========================================================================================
+     */
+
+    /**
+     * @param peer {Peer}
+     * @type {Connector}
+     */
+    var Connector = Gossip.Connector = function (peer) {
+        this.peer = peer;
+        this.view = null;
+
+        /**
+         * @type {function} (id {String})
+         * @private
+         */
+        this._notifyUpdateAboutFail = null;
+
+        var self = this;
+        peer.on("error", function(err){
+            var peer, view;
+            var notifyUpdate = self._notifyUpdateAboutFail;
+            switch (err.type){
+                case "peer-unavailable":
+                    view = self.view;
+                    peer = err.message.substr(26); //TODO that's bad...
+                    self.remove(peer);
+                    if (notifyUpdate !== null) {
+                        notifyUpdate.call(self, peer);
+                    }
+                    break;
+            }
+        });
+    };
+
+    Connector.prototype.remove = function (id) {
+        var view = this.view, L = this.view.length, current;
+        for (var i = 0; i < L; i++) {
+            current = view[i];
+            if (current.addr === id) {
+                if (current.node) {
+                    current.node.close();
+                }
+                view.splice(i,1);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    /**
+     * Views layout MUST consist of the following elements:
+     * [
+     *      { addr: {String}},
+     *      ...
+     * ]
+     * @param view {Array}
+     * @param callback {function}
+     */
+    Connector.prototype.update = function(view, callback){
+        //TODO close the connections that are not used anymore!
+        //TODO make sure that the connections are gc'd!
+        //TODO put a timeout
+        var peer = this.peer;
+        this.view = view;
+        var i = 0, current, expectedCallbacks = 0;
+
+        /**
+         * makes sure that we reach the callback at some point
+         */
+        function countDown() {
+            console.log("Count down: " + expectedCallbacks);
+            expectedCallbacks = expectedCallbacks - 1;
+            console.log("Count down: " + expectedCallbacks);
+            if (expectedCallbacks === 0) {
+                callback.call(this);
+            }
+        }
+        this._notifyUpdateAboutFail = countDown;
+
+        for(; i < view.length; i++){
+            current = view[i];
+            if (! ("node" in current)) {
+                expectedCallbacks += 1;
+                var conn = peer.connect(current.addr);
+                conn.on("open", countDown);
+            }
+        }
+
+    };
+
+    /*
+     ==========================================================================================
+     C O N N E C T O R  E N D
+     ==========================================================================================
+     */
 
 
 })(typeof window.Gossip === 'undefined'?

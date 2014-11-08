@@ -4,6 +4,5 @@
 (function(Gossip){
 
 
-
 })(typeof window.Gossip === 'undefined'?
     window.Gossip = {} : window.Gossip);

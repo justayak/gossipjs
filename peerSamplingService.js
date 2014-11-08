@@ -5,6 +5,11 @@
 (function(Gossip){
 
     /**
+     * @type {Gossip.Connector}
+     */
+    var connector = null;
+
+    /**
      * Times in millis for active thread
      * @type {number}
      */
@@ -84,11 +89,19 @@
     /**
      *
      */
-    function init(options) {
+    function init(options, callback) {
+        var peer = Gossip.Peer;
         if (Gossip.isDefined(options)) {
             T = ("T" in options) ? options.T : T;
             c = ("c" in options) ? options.c : c;
+            peer = ("peer" in options) ? options.peer : peer;
+            view = ("bootstrap" in options) ?
+                _.map(options.bootstrap, function (n) {
+                    return {addr: n, hopCount:0};
+                }) : [];
         }
+        connector = new Gossip.Connector(peer);
+        connector.update(view, callback);
     };
 
     // Peer Selection policies
