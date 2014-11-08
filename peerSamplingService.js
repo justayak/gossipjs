@@ -16,10 +16,47 @@
     var T = 250;
 
     /**
+     * @type {String}
+     */
+    var myAddress = null;
+
+    /**
      * Count of node descriptors
      * @type {number}
      */
     var c = 5;
+
+    var POLICY = {
+        SELECT_PEER : {
+            RAND: 0,
+            HEAD: 1,
+            TAIL: 2
+        },
+        SELECT_VIEW : {
+            RAND: 0,
+            HEAD: 1,
+            TAIL: 2
+        },
+        VIEW_PROPAGATION : {
+            PUSH: 0,
+            PULL: 1,
+            PUSH_PULL: 2
+        }
+    };
+
+    var push = false;
+    var pull = false;
+
+    var selectionPolicy = {
+        selectPeer : null,
+        selectView : null
+    };
+
+    var DEFAULT_POLICY = {
+        SELECT_PEER : POLICY.SELECT_PEER.HEAD,
+        SELECT_VIEW : POLICY.SELECT_VIEW.HEAD,
+        VIEW_PROPAGATION : POLICY.VIEW_PROPAGATION.PUSH_PULL
+    };
 
     /**
      * Contains the Node Descriptors
@@ -32,6 +69,30 @@
     var view = [];
 
     /**
+     * @returns {boolean} true, when there are peers in the view
+     */
+    function hasPeers(){
+        return view.length > 0;
+    };
+
+    /**
+     * "Active" Thread that runs forever in T time slices
+     */
+    function active() {
+        var p, myDescriptor, buffer;
+        if (hasPeers()) {
+            p = selectionPolicy.selectPeer();
+
+            if (push){
+
+                myDescriptor = {addr: myDescriptor, hopCount: 0};
+                buffer = merge(view, [myDescriptor]);
+
+            }
+        }
+    };
+
+    /**
      * Increment the hop count of every element in the view
      * @param view
      */
@@ -42,6 +103,36 @@
             current.hopCount += 1;
         }
         return view;
+    };
+
+    /**
+     * Makes a string out of the buffer
+     * @param buffer
+     * @returns {string}
+     */
+    function serialize(buffer) {
+        var result = "", i = 0, L = buffer.length;
+          for (;i<L;i++){
+              result += buffer[i].addr + ":" + buffer[i].hopCount;
+              if (i < L-1){
+                  result += ",";
+              }
+          }
+        return result;
+    };
+
+    function deserialize(str) {
+        var buffer = [];
+        var U = str.split(",");
+        var i = 0, L = U.length, current;
+        for(;i<L;i++){
+            current = U[i].split(":");
+            buffer.push({
+                addr : current[0],
+                hopCount : parseInt(current[1],10)
+            });
+        }
+        return buffer;
     };
 
     /**
@@ -90,7 +181,7 @@
      *
      */
     function init(options, callback) {
-        var peer = Gossip.Peer;
+        var peer = Gossip.Peer, policy;
         if (Gossip.isDefined(options)) {
             T = ("T" in options) ? options.T : T;
             c = ("c" in options) ? options.c : c;
@@ -99,9 +190,58 @@
                 _.map(options.bootstrap, function (n) {
                     return {addr: n, hopCount:0};
                 }) : [];
+            policy = ("policy" in options) ?
+                options.policy : DEFAULT_POLICY;
+            myAddress = options.addr;
+        } else {
+            throw "PeerSamplingService needs options!";
         }
+
+        switch (policy.SELECT_PEER){
+            case POLICY.SELECT_PEER.HEAD:
+                selectionPolicy.selectPeer = head;
+                break;
+            case POLICY.SELECT_PEER.RAND:
+                selectionPolicy.selectPeer = rand;
+                break;
+            case POLICY.SELECT_PEER.TAIL:
+                selectionPolicy.selectPeer = tail;
+                break;
+        }
+
+        switch (policy.SELECT_VIEW){
+            case POLICY.SELECT_VIEW.HEAD:
+                selectionPolicy.selectPeer = head;
+                break;
+            case POLICY.SELECT_VIEW.RAND:
+                selectionPolicy.selectPeer = rand;
+                break;
+            case POLICY.SELECT_VIEW.TAIL:
+                selectionPolicy.selectPeer = tail;
+                break;
+        }
+
+        switch (policy.VIEW_PROPAGATION){
+            case POLICY.VIEW_PROPAGATION.PULL:
+                pull = true;
+                push = false;
+                break;
+            case POLICY.VIEW_PROPAGATION.PUSH:
+                push = true;
+                pull = false;
+                break;
+            case POLICY.VIEW_PROPAGATION.PUSH_PULL:
+                pull = push = true;
+                break;
+        }
+
         connector = new Gossip.Connector(peer);
-        connector.update(view, callback);
+        connector.update(view, function (availableView) {
+            // The view we get here is actually available!
+            // Nodes, that couldn't be reached are removed
+            view = availableView;
+            callback.call(this);
+        });
     };
 
     // Peer Selection policies
@@ -162,6 +302,8 @@
         // TODO keep going here
     }
 
+
+
     Gossip.PeerSamplingService = {
 
         init : init,
@@ -171,7 +313,9 @@
             merge : merge,
             increaseHopCount : increaseHopCount,
             head : head,
-            tail : tail
+            tail : tail,
+            serialize: serialize,
+            deserialize: deserialize
         }
 
     };

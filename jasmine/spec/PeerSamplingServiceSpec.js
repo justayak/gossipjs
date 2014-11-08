@@ -140,4 +140,23 @@ describe("PeerSamplingService", function () {
         var result = PSS.inner.tail(PSS.inner.merge(view1, view3));
         expect(result).toEqual(["D","C","Q", "B", "A"]);
     });
+
+    it("should serialize correctly", function () {
+        var ser = PSS.inner.serialize(view3);
+        expect(ser).toEqual("A:1,Q:4,B:7");
+    });
+
+    it("should deserialize correctly", function () {
+        var des = PSS.inner.deserialize("A:1,Q:4,B:7");
+        expect(des).toEqual(view3);
+    });
+
+    it("should serialize/deserialize symetrically", function () {
+        var ser = PSS.inner.serialize;
+        var des = PSS.inner.deserialize;
+        expect(des(ser(view1))).toEqual(view1);
+        expect(des(ser(view2))).toEqual(view2);
+        expect(des(ser(view3))).toEqual(view3);
+    });
+
 });

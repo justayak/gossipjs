@@ -140,6 +140,7 @@
             log("Establish as node {" + name + "}");
             log("Connect to broker {" + options.host + ":" + options.port + "}");
             var peer = new Peer(name, options);
+            console.log(peer);
             Gossip.Peer = peer;
             peer.on("error", function(err){
                 log(err);
