@@ -287,17 +287,17 @@
         switch (policy.SELECT_PEER){
             case POLICY.SELECT_PEER.HEAD:
                 selectionPolicy.selectPeer = function () {
-                    head.call(this,view,true);
+                    return head.call(this,view,true);
                 };
                 break;
             case POLICY.SELECT_PEER.RAND:
                 selectionPolicy.selectPeer = function () {
-                    rand.call(this,view,true);
+                    return rand.call(this,view,true);
                 };
                 break;
             case POLICY.SELECT_PEER.TAIL:
                 selectionPolicy.selectPeer = function () {
-                    tail.call(this,view,true);
+                    return tail.call(this,view,true);
                 };
                 break;
         }
@@ -305,17 +305,17 @@
         switch (policy.SELECT_VIEW){
             case POLICY.SELECT_VIEW.HEAD:
                 selectionPolicy.selectView = function () {
-                    head.call(this,view,false);
+                    return head.call(this,view,false);
                 };;
                 break;
             case POLICY.SELECT_VIEW.RAND:
                 selectionPolicy.selectView = function () {
-                    rand.call(this,view,false);
+                    return rand.call(this,view,false);
                 };
                 break;
             case POLICY.SELECT_VIEW.TAIL:
                 selectionPolicy.selectView = function () {
-                    tail.call(this,view,false);
+                    return tail.call(this,view,false);
                 };
                 break;
         }
@@ -401,17 +401,9 @@
     function head(view, singleValue) {
         var s = _.size(view);
         if (s > 0) {
-            if (singleValue) {
-                var min = _.min(view, function (e) {return e.hopCount;});
-                return min.addr;
-            } else {
-                return _.pluck(_.first(_.sortBy(view, function(e){return e.hopCount;}), s > c ? c : s),"addr");
-            }
-            /*
             return singleValue ?
                 _.min(view, function (e) {return e.hopCount;}).addr :
                 _.pluck(_.first(_.sortBy(view, function(e){return e.hopCount;}), s > c ? c : s),"addr");
-            */
         }
         return null;
     };
