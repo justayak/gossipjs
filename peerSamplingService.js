@@ -304,17 +304,17 @@
 
         switch (policy.SELECT_VIEW){
             case POLICY.SELECT_VIEW.HEAD:
-                selectionPolicy.selectPeer = function () {
+                selectionPolicy.selectView = function () {
                     head.call(this,view,false);
                 };;
                 break;
             case POLICY.SELECT_VIEW.RAND:
-                selectionPolicy.selectPeer = function () {
+                selectionPolicy.selectView = function () {
                     rand.call(this,view,false);
                 };
                 break;
             case POLICY.SELECT_VIEW.TAIL:
-                selectionPolicy.selectPeer = function () {
+                selectionPolicy.selectView = function () {
                     tail.call(this,view,false);
                 };
                 break;
