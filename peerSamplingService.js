@@ -401,9 +401,17 @@
     function head(view, singleValue) {
         var s = _.size(view);
         if (s > 0) {
+            if (singleValue) {
+                var min = _.min(view, function (e) {return e.hopCount;});
+                return min.addr;
+            } else {
+                return _.pluck(_.first(_.sortBy(view, function(e){return e.hopCount;}), s > c ? c : s),"addr");
+            }
+            /*
             return singleValue ?
                 _.min(view, function (e) {return e.hopCount;}).addr :
                 _.pluck(_.first(_.sortBy(view, function(e){return e.hopCount;}), s > c ? c : s),"addr");
+            */
         }
         return null;
     };

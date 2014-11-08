@@ -116,6 +116,11 @@ describe("PeerSamplingService", function () {
         expect(result).toEqual("B");
     });
 
+    it("should select the right single head from [1]-Array", function(){
+        var result = PSS.inner.head([{addr:"J", hopCount:1}], true);
+        expect(result).toEqual("J");
+    });
+
     it("should select the right single tail", function(){
         var result = PSS.inner.tail(view1, true);
         expect(result).toEqual("D");
