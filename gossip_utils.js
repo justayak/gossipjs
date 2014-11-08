@@ -458,6 +458,7 @@
      * @param callback {function}
      */
     Connector.prototype.update = function(view, callback){
+        if (view === null) throw "Connector.update: view cannot be null!";
         if (this._notifyUpdateAboutFail !== null) throw "Concurrent update running!";
         //TODO close the connections that are not used anymore!
         //TODO make sure that the connections are gc'd!
