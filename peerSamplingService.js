@@ -77,19 +77,28 @@
 
     var MESSAGE_TYPE = {
         SEND_BUFFER: 0,
-        REQUEST_BUFFER : 1,
-        REQUEST_BUFFER_ANSWER : 2
+        REQUEST_BUFFER_ANSWER : 1
     };
+
+    //TODO potentially DEAD-LOCK: Proposal: Round-Robin..
+    var waitForActive = false;
+    var waitForPassive = false;
+    var timeoutWaitForActive = null;
 
     /**
      * "Active" Thread that runs forever in T time slices
      */
     function active() {
         var p, myDescriptor, buffer = [];
-        if (hasPeers()) {
+        if (hasPeers() && !waitForPassive) {
+            /*
+             * {P} - waitForActive = false, waitForPassive = false
+             *  C
+             * {Q} - waitForActive = true / when {pull}, waitForPassive = false
+             */
             p = selectionPolicy.selectPeer();
             if (push){
-                myDescriptor = {addr: myDescriptor, hopCount: 0};
+                myDescriptor = {addr: myAddress, hopCount: 0};
                 buffer = merge(view, [myDescriptor]);
             }
             // When push=False we send an empty view to trigger a response
@@ -97,8 +106,14 @@
                 p, MESSAGE_TYPE.SEND_BUFFER, serialize(buffer));
 
             if (pull) {
-                //TODO we might have a problem here when 2 requests are started..
-                connector.fireAndForget(p, MESSAGE_TYPE.REQUEST_BUFFER);
+                // We must ensure that the passive thread does not hit in-between
+                // our pull-request
+                waitForActive = true;
+                timeoutWaitForActive = setTimeout(function(){
+                    // TIMED-OUT
+                    //TODO maybe tokenize the messages..
+                    waitForActive = false;
+                }, 500);
             }
         }
     };
@@ -108,13 +123,55 @@
      * @param view
      */
     function onPull(viewP) {
-        viewP = increaseHopCount(viewP);
-        var buffer = merge(viewP, view);
-        var newView = selectionPolicy.selectView(buffer);
-        connector.update(newView, function (v) {
-            view = v;
-        });
+        //TODO make sure that we do not hit in-between
+        //TODO maybe tokenize the message to ensure we got the right one!
+        /*
+         * {P} - waitForActive = true, waitForPassive = false
+         *  C
+         * {Q} - waitForActive = false, waitForPassive = false
+         */
+        if (!waitForActive) {
+            Gossip.log("Out-of-Sync PULL Timed-out");
+        } else {
+            viewP = increaseHopCount(viewP);
+            var buffer = merge(viewP, view);
+            buffer = selectionPolicy.selectView(buffer);
+            connector.update(buffer, function (v) {
+                waitForActive = false;
+                view = v;
+            });
+        }
+
     }
+
+    /**
+     * "Passive" Thread that runs forever. Gets activated by an incoming message
+     */
+    function passive(){
+        var desc = waitMessage(), viewP, p, myDescriptor, buffer;
+        if (desc !== null) {
+            /*
+             * {P} - waitForActive = false, waitForPassive = false
+             *  C
+             * {Q} - waitForActive = false, waitForPassive = false
+             */
+            waitForPassive = true;
+            p = desc.addr;
+            viewP = increaseHopCount(desc.view);
+
+            if (pull) {
+                myDescriptor = {addr: myAddress, hopCount:0};
+                buffer = merge(view, [myDescriptor]);
+                connector.fireAndForget(p, MESSAGE_TYPE.REQUEST_BUFFER_ANSWER, serialize(buffer));
+            }
+
+            buffer = selectionPolicy.selectView(merge(viewP, view));
+            connector.update(buffer, function(v){
+                view = v;
+                waitForPassive = false;
+            });
+        }
+    };
 
     /**
      * Increment the hop count of every element in the view
@@ -135,6 +192,7 @@
      * @returns {string}
      */
     function serialize(buffer) {
+        if (buffer.length === 0) return "#";
         var result = "", i = 0, L = buffer.length;
           for (;i<L;i++){
               result += buffer[i].addr + ":" + buffer[i].hopCount;
@@ -146,6 +204,7 @@
     };
 
     function deserialize(str) {
+        if (str === "#") return [];
         var buffer = [];
         var U = str.split(",");
         var i = 0, L = U.length, current;
@@ -217,31 +276,47 @@
             policy = ("policy" in options) ?
                 options.policy : DEFAULT_POLICY;
             myAddress = options.addr;
+
+            setInterval(active, T);
+            setInterval(passive, 1000/10); // 1/10 sec
+
         } else {
             throw "PeerSamplingService needs options!";
         }
 
         switch (policy.SELECT_PEER){
             case POLICY.SELECT_PEER.HEAD:
-                selectionPolicy.selectPeer = head;
+                selectionPolicy.selectPeer = function () {
+                    head.call(this,view,true);
+                };
                 break;
             case POLICY.SELECT_PEER.RAND:
-                selectionPolicy.selectPeer = rand;
+                selectionPolicy.selectPeer = function () {
+                    rand.call(this,view,true);
+                };
                 break;
             case POLICY.SELECT_PEER.TAIL:
-                selectionPolicy.selectPeer = tail;
+                selectionPolicy.selectPeer = function () {
+                    tail.call(this,view,true);
+                };
                 break;
         }
 
         switch (policy.SELECT_VIEW){
             case POLICY.SELECT_VIEW.HEAD:
-                selectionPolicy.selectPeer = head;
+                selectionPolicy.selectPeer = function () {
+                    head.call(this,view,false);
+                };;
                 break;
             case POLICY.SELECT_VIEW.RAND:
-                selectionPolicy.selectPeer = rand;
+                selectionPolicy.selectPeer = function () {
+                    rand.call(this,view,false);
+                };
                 break;
             case POLICY.SELECT_VIEW.TAIL:
-                selectionPolicy.selectPeer = tail;
+                selectionPolicy.selectPeer = function () {
+                    tail.call(this,view,false);
+                };
                 break;
         }
 
@@ -272,14 +347,30 @@
                  case MESSAGE_TYPE.REQUEST_BUFFER_ANSWER:
                      onPull.call(connector,deserialize(payload));
                      break;
-                 case MESSAGE_TYPE.REQUEST_BUFFER:
-                     connector.fireAndForget(id, MESSAGE_TYPE.REQUEST_BUFFER_ANSWER, serialize(view));
-                     break;
+                 case MESSAGE_TYPE.SEND_BUFFER:
+                    // put it on the Queue so it can be queried from "waitMessage"
+                    bufferQueue.push({addr:id, view: deserialize(payload)})
+                    break;
                  default:
 
                      break;
              }
         });
+    };
+
+    var bufferQueue = [];
+
+    /**
+     * Checks, if a message is there and can be processed
+     * @returns {Descriptor}
+     */
+    function waitMessage() {
+        if (!waitForActive){
+            if (bufferQueue.length > 0) {
+                return bufferQueue.shift();
+            }
+        }
+        return null;
     };
 
     // Peer Selection policies

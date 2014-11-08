@@ -146,6 +146,12 @@ describe("PeerSamplingService", function () {
         expect(ser).toEqual("A:1,Q:4,B:7");
     });
 
+    it("should serialize empty list correctly", function () {
+        var ser = PSS.inner.serialize;
+        var des = PSS.inner.deserialize;
+        expect(des(ser([]))).toEqual([]);
+    });
+
     it("should deserialize correctly", function () {
         var des = PSS.inner.deserialize("A:1,Q:4,B:7");
         expect(des).toEqual(view3);
