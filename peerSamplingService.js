@@ -342,7 +342,7 @@
             callback.call(this);
         });
 
-        connector.onFireAndForgetFailed(function(id){
+        connector.onFail(function(id){
             Gossip.log("fireAndForget failed with: " + id);
             console.log(connector.view);
         });

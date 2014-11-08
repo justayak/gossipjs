@@ -69,7 +69,13 @@
 
                         });
 
-
+                        setInterval(function(){
+                            PSS.innner.connector.test("D", function () {
+                                console.log("SUCCESS");
+                            }, function(){
+                                console.log("FAIL");
+                            })
+                        },2000);
 
                     });
                 }

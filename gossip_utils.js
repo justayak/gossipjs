@@ -194,8 +194,23 @@
                 if (isString(d)){
                     d = JSON.parse(d);
                 }
-                for(;i < L; i++ ){
-                    cb[i].call(self, conn.peer, d.type, d.payload);
+                switch (d.type) {
+                    case MESSAGE_TYPE.PING:
+                        self.fireAndForget(conn.peer, MESSAGE_TYPE.PONG);
+                        break;
+                    case MESSAGE_TYPE.PONG:
+                        if (conn.peer in testNode){
+                            clearInterval(testNode[conn.peer].timeout);
+                            var cb = testNode[conn.peer].success;
+                            delete testNode[conn.peer];
+                            cb.call(self, conn.peer);
+                        }
+                        break;
+                    default :
+                        for(;i < L; i++ ){
+                            cb[i].call(self, conn.peer, d.type, d.payload);
+                        }
+                        break;
                 }
             });
         });
@@ -219,7 +234,7 @@
                     if (notifyUpdate !== null) {
                         notifyUpdate.call(self, peer);
                     }
-                    self.onFireAndForgetFailedCallback.call(self, peer);
+                    self.onFail.call(self, peer);
                     break;
             }
         });
@@ -237,7 +252,7 @@
      *
      * @param cb {function}
      */
-    Connector.prototype.onFireAndForgetFailed = function(cb){
+    Connector.prototype.onFail = function(cb){
         this.onFireAndForgetFailedCallback.push(cb);
     };
 
@@ -323,6 +338,34 @@
             }
         }
         return false;
+    };
+
+    var MESSAGE_TYPE = {
+        PING : -1,
+        PONG : -2
+    };
+
+    var testNode = {
+
+    };
+
+    /**
+     * Test if a node is available or not
+     * @param id {String}
+     * @param success {function}
+     * @param failure {function}
+     */
+    Connector.prototype.test = function (id, success, failure) {
+        if (! (id in testNode)) {
+            this.fireAndForget(id, MESSAGE_TYPE.PING);
+            var self = this;
+            testNode[id] = {
+                success : success,
+                timeout: setTimeout(function(){
+                    failure.call(self, id);
+                    delete testNode[id];
+            }, 500)};
+        }
     };
 
     /**
