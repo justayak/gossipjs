@@ -432,9 +432,7 @@
          * makes sure that we reach the callback at some point
          */
         function countDown() {
-            console.log("Count down: " + expectedCallbacks);
             expectedCallbacks = expectedCallbacks - 1;
-            console.log("Count down: " + expectedCallbacks);
             if (expectedCallbacks === 0) {
                 callback.call(this);
             }

@@ -1,6 +1,6 @@
 function executeCallback(id, message, callbacks){
-    if (id in Gossip.Peer.callbacks){
-        var callbacks = Gossip.Peer.callbacks[id];
+    if (id in callbacks){
+        callbacks = callbacks[id];
         for (var i = 0; i < callbacks.length; i++) {
             callbacks[i].call(this, message);
         }
@@ -35,17 +35,18 @@ Gossip.Peer = {
             id : id
         };
 
-        console.log("Dummy peer connect to {" + id + "}");
+        var succ = true;
         if (Math.random() > 0.2){
             openConnection(conn);
         } else {
+            succ = false;
             setTimeout(function(){
                 executeCallback("error", {
                     type: "peer-unavailable",
                     message: "aaaaaaaaaaaaaaaaaaaaaaaaaa" + id},Gossip.Peer.callbacks);
             },100);
         }
-
+        console.log("Dummy peer connect to {" + id + "} " + (succ ? "+" : "-"));
         return conn;
     },
 
