@@ -364,6 +364,7 @@
                 timeout: setTimeout(function(){
                     failure.call(self, id);
                     delete testNode[id];
+                    delete fireAndForgetItems[id];
             }, 500)};
         }
     };
