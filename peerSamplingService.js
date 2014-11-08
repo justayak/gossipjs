@@ -347,6 +347,10 @@
             console.log(connector.view);
         });
 
+        connector.onRemove(function (id) {
+            Gossip.log("Node {" + id + "} is unreachable");
+        });
+
         connector.onMessage(function(id, type, payload){
              switch (type) {
                  case MESSAGE_TYPE.REQUEST_BUFFER_ANSWER:
