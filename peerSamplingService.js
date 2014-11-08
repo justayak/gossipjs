@@ -277,9 +277,6 @@
                 options.policy : DEFAULT_POLICY;
             myAddress = peer.id;
 
-            setInterval(active, T);
-            setInterval(passive, 1000/10); // 1/10 sec
-
         } else {
             throw "PeerSamplingService needs options!";
         }
@@ -340,6 +337,8 @@
             // The view we get here is actually available!
             // Nodes, that couldn't be reached are removed
             view = availableView;
+            setInterval(active, T);
+            setInterval(passive, 1000/10); // 1/10 sec
             callback.call(this);
         });
 
