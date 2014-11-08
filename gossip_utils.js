@@ -180,7 +180,7 @@
                     d = JSON.parse(d);
                 }
                 for(;i < L; i++ ){
-                    cb[i].call(self, conn.peer, d);
+                    cb[i].call(self, conn.peer, d.type, d.payload);
                 }
             });
         });

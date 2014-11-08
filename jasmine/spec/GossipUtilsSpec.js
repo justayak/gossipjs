@@ -40,12 +40,13 @@ describe("Gossip Utils Connector", function () {
     });
 
     it('should get a message', function (done) {
-        connector.onMessage(function (id, msg) {
+        connector.onMessage(function (id, type, payload) {
             expect(id).toBe("Q");
-            expect(msg.msg).toBe("hallo welt");
+            expect(type).toBe(4);
+            expect(payload).toEqual("hallo welt");
             done();
         });
-        sendMessageToConnector(connector, {msg:"hallo welt"}, "Q");
+        sendMessageToConnector(connector, {type: 4,payload:"hallo welt"}, "Q");
     });
 
 

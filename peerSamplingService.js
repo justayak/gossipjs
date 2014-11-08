@@ -75,6 +75,11 @@
         return view.length > 0;
     };
 
+    var MESSAGE_TYPE = {
+        SEND_BUFFER: 0,
+        REQUEST_BUFFER : 1
+    };
+
     /**
      * "Active" Thread that runs forever in T time slices
      */
@@ -87,6 +92,7 @@
 
                 myDescriptor = {addr: myDescriptor, hopCount: 0};
                 buffer = merge(view, [myDescriptor]);
+                //connector.fireAndForget(p, MESSAGE_TYPE.SEND_BUFFER, )
 
             }
         }
