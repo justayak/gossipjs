@@ -397,6 +397,7 @@
             if (! ("node" in current)) {
                 expectedCallbacks += 1;
                 var conn = peer.connect(current.addr);
+                current.node = conn;
                 conn.on("open", countDown);
             }
         }
