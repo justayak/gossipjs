@@ -13,7 +13,7 @@
      * Times in millis for active thread
      * @type {number}
      */
-    var T = 250;
+    var T = 1000;
 
     /**
      * @type {String}
@@ -145,7 +145,7 @@
     }
 
     /**
-     * "Passive" Thread that runs forever. Gets activated by an incoming message
+     * "Passive" Thread that runs forever.
      */
     function passive(){
         var desc = waitMessage(), viewP, p, myDescriptor, buffer;
@@ -338,8 +338,13 @@
             // Nodes, that couldn't be reached are removed
             view = availableView;
             setInterval(active, T);
-            setInterval(passive, 1000/10); // 1/10 sec
+            setInterval(passive, 1000); // 1/10 sec
             callback.call(this);
+        });
+
+        connector.onFireAndForgetFailed(function(id){
+            Gossip.log("fireAndForget failed with: " + id);
+            console.log(connector.view);
         });
 
         connector.onMessage(function(id, type, payload){

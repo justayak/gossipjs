@@ -185,6 +185,7 @@
         this.peer = peer;
         this.view = null;
         this.onMessagesCallback = [];
+        this.onFireAndForgetFailedCallback = [];
         var self = this;
         peer.on("connection", function(conn){
             conn.on("data", function (d) {
@@ -218,6 +219,7 @@
                     if (notifyUpdate !== null) {
                         notifyUpdate.call(self, peer);
                     }
+                    self.onFireAndForgetFailedCallback.call(self, peer);
                     break;
             }
         });
@@ -225,10 +227,18 @@
 
     /**
      *
-     * @param callback
+     * @param callback {function}
      */
     Connector.prototype.onMessage = function (callback) {
         this.onMessagesCallback.push(callback);
+    };
+
+    /**
+     *
+     * @param cb {function}
+     */
+    Connector.prototype.onFireAndForgetFailed = function(cb){
+        this.onFireAndForgetFailedCallback.push(cb);
     };
 
     /**
