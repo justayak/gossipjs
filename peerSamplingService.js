@@ -335,6 +335,7 @@
         }
 
         connector = new Gossip.Connector(peer);
+        Gossip.PeerSamplingService.inner.connector = connector;
         connector.update(view, function (availableView) {
             // The view we get here is actually available!
             // Nodes, that couldn't be reached are removed
@@ -439,7 +440,7 @@
         getPeers : getPeers,
 
         inner : {
-            connector: connector,
+            connector: null,
             merge : merge,
             increaseHopCount : increaseHopCount,
             head : head,
