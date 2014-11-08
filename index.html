@@ -16,14 +16,10 @@
             <div id="after">
                 <div>
                     <div>
-                        <input id="other"/>
-                        <button id="otherBtn">connect</button>
-                        <span id="others"></span>
-                    </div>
-                    <div>
                         <strong id="meFinal"></strong><br/>
-                        <input id="msg"/>
-                        <button id="sendBtn">send</button>
+                        <div id="PSS">
+
+                        </div>
                     </div>
                     <div id="content">
 
@@ -69,7 +65,7 @@
                             bootstrap : bootstrap
                         }, function(){
 
-                            observeConnector(PSS.inner.connector);
+                            observeConnector(PSS.inner.connector, "PSS");
 
                         });
 
