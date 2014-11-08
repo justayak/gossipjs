@@ -239,20 +239,61 @@
     /**
      * Send a message to a node
      * @param id {String}
+     * @param type {number}
      * @param message {Object}
      * @returns {boolean} True when send and false otherwise
      */
-    Connector.prototype.send = function (id, message) {
+    Connector.prototype.send = function (id, type, message) {
         var view = this.view, L = this.view.length, i = 0, current;
         for(;i < L; i++){
             current = view[i];
             if (current.addr === id) {
-                current.node.send(message);
+                current.node.send(createMessage(type, message));
                 return true;
             }
         }
         return false;
     };
+
+    /**
+     * Sends a message to a specific node. This node does not
+     * necessarily needs to be member of the current view
+     * @param id {String}
+     * @param type {number}
+     * @param message {Object}
+     */
+    Connector.prototype.fireAndForget = function(id, type, message) {
+        log("Fire-and-Forget: Target: {" + id + "}");
+        var view = this.view, L = this.view.length, i = 0, current;
+        for(;i<L;i++){
+            current = view[i];
+            if (current.addr === id) {
+                current.node.send(createMessage(type, message));
+                return;
+            }
+        }
+        // we need to open a connection:
+        var conn = this.peer.connect(id);
+        conn.on("open", function(){
+            conn.send(createMessage(type, message));
+            conn.close();
+            //TODO figure out if we need to do more stuff to close it..
+        });
+    };
+
+    /**
+     * Create a message
+     * @param type {number}
+     * @param payload {object} OPTIONAL
+     * @returns {Object}
+     */
+    function createMessage(type, payload) {
+        if (Gossip.isDefined(payload)){
+            return {type:type, payload:payload};
+        } else {
+            return {type:type};
+        }
+    }
 
     /**
      * Views layout MUST consist of the following elements:
