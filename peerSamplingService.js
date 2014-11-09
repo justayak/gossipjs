@@ -189,7 +189,7 @@
             }
             Gossip.log("a: " + p);
             connector.fireAndForget(p, MESSAGE_TYPE.SEND_BUFFER, serialize(buffer));
-            view = increaseHopCount(view);
+            //view = increaseHopCount(view);
 
         }
 
