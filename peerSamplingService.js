@@ -90,7 +90,7 @@
      */
     function active() {
         var p, myDescriptor, buffer = [];
-        if (hasPeers() && !waitForPassive) {
+        if (hasPeers() && !waitForPassive && !waitForActive) {
             /*
              * {P} - waitForActive = false, waitForPassive = false
              *  C
@@ -112,8 +112,9 @@
                 timeoutWaitForActive = setTimeout(function(){
                     // TIMED-OUT
                     //TODO maybe tokenize the messages..
+                    console.log("TIMEOUT! " + p);
                     waitForActive = false;
-                }, 500);
+                }, 1000);
             }
         }
     };
@@ -132,13 +133,15 @@
          */
         if (!waitForActive) {
             Gossip.log("Out-of-Sync PULL Timed-out");
-        } else {
+        } else if (!waitForPassive){
             viewP = increaseHopCount(viewP);
             var buffer = merge(viewP, view);
             buffer = selectionPolicy.selectView(buffer);
+            console.log("PULL");
             connector.update(buffer, function (v) {
                 waitForActive = false;
                 view = v;
+                console.log("active end: ", view);
             });
         }
 
@@ -166,9 +169,12 @@
             }
 
             buffer = selectionPolicy.selectView(merge(viewP, view));
+            console.log("PASSIVE");
             connector.update(buffer, function(v){
                 view = v;
                 waitForPassive = false;
+                console.log("pas", buffer);
+                console.log("passive end:", view);
             });
         }
     };
@@ -283,36 +289,42 @@
 
         switch (policy.SELECT_PEER){
             case POLICY.SELECT_PEER.HEAD:
-                selectionPolicy.selectPeer = function () {
-                    return head.call(this,view,true);
+                selectionPolicy.selectPeer = function (v) {
+                    if (!Gossip.isDefined(v)) v = view;
+                    return head.call(this,v,true);
                 };
                 break;
             case POLICY.SELECT_PEER.RAND:
-                selectionPolicy.selectPeer = function () {
-                    return rand.call(this,view,true);
+                selectionPolicy.selectPeer = function (v) {
+                    if (!Gossip.isDefined(v)) v = view;
+                    return rand.call(this,v,true);
                 };
                 break;
             case POLICY.SELECT_PEER.TAIL:
-                selectionPolicy.selectPeer = function () {
-                    return tail.call(this,view,true);
+                selectionPolicy.selectPeer = function (v) {
+                    if (!Gossip.isDefined(v)) v = view;
+                    return tail.call(this,v,true);
                 };
                 break;
         }
 
         switch (policy.SELECT_VIEW){
             case POLICY.SELECT_VIEW.HEAD:
-                selectionPolicy.selectView = function () {
-                    return head.call(this,view,false);
+                selectionPolicy.selectView = function (v) {
+                    if (!Gossip.isDefined(v)) v = view;
+                    return head.call(this,v,false);
                 };;
                 break;
             case POLICY.SELECT_VIEW.RAND:
-                selectionPolicy.selectView = function () {
-                    return rand.call(this,view,false);
+                selectionPolicy.selectView = function (v) {
+                    if (!Gossip.isDefined(v)) v = view;
+                    return rand.call(this,v,false);
                 };
                 break;
             case POLICY.SELECT_VIEW.TAIL:
-                selectionPolicy.selectView = function () {
-                    return tail.call(this,view,false);
+                selectionPolicy.selectView = function (v) {
+                    if (!Gossip.isDefined(v)) v = view;
+                    return tail.call(this,v,false);
                 };
                 break;
         }
@@ -333,14 +345,15 @@
 
         connector = new Gossip.Connector(peer);
         Gossip.PeerSamplingService.inner.connector = connector;
+        console.log("INIT");
         connector.update(view, function (availableView) {
             // The view we get here is actually available!
             // Nodes, that couldn't be reached are removed
             view = availableView;
-            setInterval(active, T);
-            setInterval(passive, 1000); // 1/10 sec
             callback.call(this);
         });
+        setInterval(active, T);
+        setInterval(passive, 1000); // 1/10 sec
 
         connector.onFail(function(id){
             Gossip.log("fireAndForget failed with: " + id);
@@ -358,7 +371,9 @@
                      break;
                  case MESSAGE_TYPE.SEND_BUFFER:
                     // put it on the Queue so it can be queried from "waitMessage"
-                    bufferQueue.push({addr:id, view: deserialize(payload)})
+                    //TODO fix here
+                    //for ()
+                    bufferQueue.push({addr:id, view: deserialize(payload)});
                     break;
                  default:
 
@@ -374,7 +389,7 @@
      * @returns {Descriptor}
      */
     function waitMessage() {
-        if (!waitForActive){
+        if (!waitForActive && !waitForPassive){
             if (bufferQueue.length > 0) {
                 return bufferQueue.shift();
             }
@@ -395,7 +410,7 @@
         if (s > 0) {
             return singleValue ?
                 _.sample(view).addr :
-                _.pluck(_.sample(view, s > c ? c : s), "addr");
+                _.sample(view, s > c ? c : s);
         }
         return null;
     };
@@ -411,7 +426,7 @@
         if (s > 0) {
             return singleValue ?
                 _.min(view, function (e) {return e.hopCount;}).addr :
-                _.pluck(_.first(_.sortBy(view, function(e){return e.hopCount;}), s > c ? c : s),"addr");
+                _.first(_.sortBy(view, function(e){return e.hopCount;}), s > c ? c : s);
         }
         return null;
     };
@@ -427,7 +442,7 @@
         if (s > 0) {
             return singleValue ?
                 _.max(view, function (e) {return e.hopCount;}).addr :
-                _.pluck(_.first(_.sortBy(view, function(e){return -(e.hopCount);}), s > c ? c : s),"addr");;
+                _.first(_.sortBy(view, function(e){return -(e.hopCount);}), s > c ? c : s);
         }
         return null;
     };

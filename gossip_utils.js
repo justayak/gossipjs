@@ -183,7 +183,7 @@
      */
     var Connector = Gossip.Connector = function (peer) {
         this.peer = peer;
-        this.view = null;
+        this.view = [];
         this.onMessagesCallback = [];
         this.onFireAndForgetFailedCallback = [];
         this.onRemoveCallbacks = [];
@@ -217,16 +217,12 @@
         });
 
         /*
-            Test every 2 seconds if our view is still reachable and if not: remove the nodes
+            Test every 5 seconds if our view is still reachable and if not: remove the nodes
          */
         this.testThread = setInterval(function(){
             // Test all elements in the view
             var view = self.view;
             var i = 0, L = view.length, current;
-            for(;i<L;i++) {
-                current = view[i];
-                self.test(current.addr, success, failure);
-            }
             function success(){};
             function failure(id){
                 self.remove(id);
@@ -235,8 +231,11 @@
                     cbs[i].call(self, id);
                 }
             };
-
-        }, 1000 * 2); // every 2 sec
+            for(;i<L;i++) {
+                current = view[i];
+                self.test(current.addr, success, failure);
+            }
+        }, 1000 * 5); // every 5 sec
         connectors.push(this);
 
         /**
@@ -339,7 +338,7 @@
     function cleanFireAndForgetItems(){
         var addr, ffI = fireAndForgetItems, tDiff, i = 0, L = connectors.length;
         var _connectors = connectors;
-        var TIME_THRESHOLD = 1000 * 60 * 5; // 2 minutes
+        var TIME_THRESHOLD = 1000 * 60 * 5; // 5 minutes
         var now = Date.now();
         for(addr in ffI) {
             tDiff = now - ffI[addr].ts;
@@ -409,7 +408,7 @@
      * @param message {Object}
      */
     Connector.prototype.fireAndForget = function(id, type, message) {
-        log("Fire-and-Forget: Target: {" + id + "}");
+        //log("Fire-and-Forget: Target: {" + id + "}");
         var view = this.view, L = this.view.length, i = 0, current;
         if (id in fireAndForgetItems) {
             fireAndForgetItems[id].node.send(createMessage(type, message));
@@ -458,7 +457,7 @@
      * @param callback {function}
      */
     Connector.prototype.update = function(view, callback){
-        if (view === null) throw "Connector.update: view cannot be null!";
+        if (view === null) view = [];
         if (this._notifyUpdateAboutFail !== null) throw "Concurrent update running!";
         //TODO close the connections that are not used anymore!
         //TODO make sure that the connections are gc'd!
@@ -477,18 +476,24 @@
                 callback.call(self, self.view);
             }
         }
-        this._notifyUpdateAboutFail = countDown;
 
-        for(; i < view.length; i++){
-            current = view[i];
-            if (! ("node" in current)) {
-                expectedCallbacks += 1;
-                var conn = peer.connect(current.addr);
-                current.node = conn;
-                conn.on("open", countDown);
+        if (view.length > 0) {
+            this._notifyUpdateAboutFail = countDown;
+            for(; i < view.length; i++){
+                current = view[i];
+                if (! ("node" in current)) {
+                    expectedCallbacks += 1;
+                    var conn = peer.connect(current.addr);
+                    current.node = conn;
+                    conn.on("open", countDown);
+                }
             }
+        } else {
+            // async return
+            setTimeout(function(){
+                callback.call(self, self.view);
+            },10);
         }
-
     };
 
     /*

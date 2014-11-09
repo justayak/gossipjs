@@ -32,6 +32,7 @@ Gossip.Peer = {
             close : function(){
                 console.log("closing {" + this.id + "}")
             },
+            send: function(){},
             id : id
         };
 
@@ -127,22 +128,22 @@ describe("PeerSamplingService", function () {
     });
 
     it("should select the right head (lower bond)", function(){
-        var result = PSS.inner.head(view3);
+        var result = _.pluck(PSS.inner.head(view3), "addr");
         expect(result).toEqual(["A","Q","B"]);
     });
 
     it("should select the right tail (lower bond)", function(){
-        var result = PSS.inner.tail(view3);
+        var result = _.pluck(PSS.inner.tail(view3), "addr");
         expect(result).toEqual(["B","Q","A"]);
     });
 
     it("should select the right head (upper bond)", function(){
-        var result = PSS.inner.head(PSS.inner.merge(view1, view3));
+        var result = _.pluck(PSS.inner.head(PSS.inner.merge(view1, view3)), "addr");
         expect(result).toEqual(["A","B","Q", "C", "D"]);
     });
 
     it("should select the right tail (upper bond)", function(){
-        var result = PSS.inner.tail(PSS.inner.merge(view1, view3));
+        var result = _.pluck(PSS.inner.tail(PSS.inner.merge(view1, view3)), "addr");
         expect(result).toEqual(["D","C","Q", "B", "A"]);
     });
 

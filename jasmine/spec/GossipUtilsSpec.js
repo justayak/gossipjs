@@ -1,6 +1,7 @@
 function sendMessageToConnector(connector, msg, id) {
     var peer = connector.peer;
     var conn = {
+        send: function(){},
         on : function (id,cb) {
             var callbacks;
             if (id in this.callbacks){
