@@ -13,7 +13,7 @@
      * Times in millis for active thread
      * @type {number}
      */
-    var T = 1000;
+    var T = 5000;
 
     /**
      * @type {String}
@@ -53,8 +53,8 @@
     };
 
     var DEFAULT_POLICY = {
-        SELECT_PEER : POLICY.SELECT_PEER.RAND,
-        SELECT_VIEW : POLICY.SELECT_VIEW.RAND,
+        SELECT_PEER : POLICY.SELECT_PEER.HEAD,
+        SELECT_VIEW : POLICY.SELECT_VIEW.HEAD,
         VIEW_PROPAGATION : POLICY.VIEW_PROPAGATION.PUSH
     };
 
@@ -189,7 +189,7 @@
             }
             Gossip.log("a: " + p);
             connector.fireAndForget(p, MESSAGE_TYPE.SEND_BUFFER, serialize(buffer));
-            //view = increaseHopCount(view);
+            view = increaseHopCount(view);
 
         }
 
