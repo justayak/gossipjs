@@ -187,6 +187,7 @@
         this.onMessagesCallback = [];
         this.onFireAndForgetFailedCallback = [];
         this.onRemoveCallbacks = [];
+        this.blockedPings = {}; // prevent network overload
         var self = this;
         peer.on("connection", function(conn){
             conn.on("data", function (d) {
@@ -197,7 +198,14 @@
                 }
                 switch (d.type) {
                     case MESSAGE_TYPE.PING:
-                        self.fireAndForget(conn.peer, MESSAGE_TYPE.PONG);
+                        if (! (conn.peer in self.blockedPings)) {
+                            self.fireAndForget(conn.peer, MESSAGE_TYPE.PONG, undefined ,true);
+                            self.blockedPings[conn.peer] = true;
+                            setTimeout(function () {
+                                delete self.blockedPings[conn.peer];
+                            }, 250);
+                        }
+
                         break;
                     case MESSAGE_TYPE.PONG:
                         if (conn.peer in testNode){
@@ -388,7 +396,7 @@
      */
     Connector.prototype.test = function (id, success, failure) {
         if (! (id in testNode)) {
-            this.fireAndForget(id, MESSAGE_TYPE.PING);
+            this.fireAndForget(id, MESSAGE_TYPE.PING, undefined, true);
             var self = this;
             testNode[id] = {
                 success : success,
@@ -396,7 +404,7 @@
                     failure.call(self, id);
                     delete testNode[id];
                     delete fireAndForgetItems[id];
-            }, 500)};
+            }, 1000)};
         }
     };
 
@@ -406,12 +414,22 @@
      * @param id {String}
      * @param type {number}
      * @param message {Object}
+     * @param burst {boolean} if true a message will be send 3 times in a row to "fight" package lose
      */
-    Connector.prototype.fireAndForget = function(id, type, message) {
+    Connector.prototype.fireAndForget = function(id, type, message, burst) {
         //log("Fire-and-Forget: Target: {" + id + "}");
+        burst = Gossip.isDefined(burst) ? burst : false;
         var view = this.view, L = this.view.length, i = 0, current;
         if (id in fireAndForgetItems) {
             fireAndForgetItems[id].node.send(createMessage(type, message));
+            if (burst){
+                setTimeout(function () {
+                    fireAndForgetItems[id].node.send(createMessage(type, message));
+                },10);
+                setTimeout(function () {
+                    fireAndForgetItems[id].node.send(createMessage(type, message));
+                },30);
+            }
             fireAndForgetItems[id].ts = Date.now(); // update timestamp
         } else {
             // see, if we already use this id
@@ -419,6 +437,14 @@
                 current = view[i];
                 if (current.addr === id) {
                     current.node.send(createMessage(type, message));
+                    if (burst){
+                        setTimeout(function () {
+                            current.node.send(createMessage(type, message));
+                        },10);
+                        setTimeout(function () {
+                            current.node.send(createMessage(type, message));
+                        },30);
+                    }
                     return;
                 }
             }
@@ -427,6 +453,14 @@
             conn.on("open", function(){
                 fireAndForgetItems[conn.peer] = {node:conn, ts: Date.now()};
                 conn.send(createMessage(type, message));
+                if (burst){
+                    setTimeout(function () {
+                        conn.send(createMessage(type, message));
+                    },10);
+                    setTimeout(function () {
+                        conn.send(createMessage(type, message));
+                    },30);
+                }
                 //conn.close();
                 //TODO figure out if we need to do more stuff to close it..
             });
@@ -463,8 +497,18 @@
         //TODO make sure that the connections are gc'd!
         //TODO put a timeout
         var peer = this.peer, self = this;
+        var myAddress = peer.id;
+        var i = 0, current, expectedCallbacks = 0, L = view.length;
+
+        // check, if our own node is in the view -> remove it
+        for(;i<L;i++) {
+            if (view[i].addr === myAddress){
+                view.splice(i,1);
+                break; // the node can be in there only once
+            }
+        }
+        i = 0;
         this.view = view;
-        var i = 0, current, expectedCallbacks = 0;
 
         /**
          * makes sure that we reach the callback at some point
@@ -481,8 +525,10 @@
             this._notifyUpdateAboutFail = countDown;
             for(; i < view.length; i++){
                 current = view[i];
-                if (! ("node" in current)) {
-                    expectedCallbacks += 1;
+                expectedCallbacks += 1;
+                if ("node" in current) {
+                    countDown();
+                } else {
                     var conn = peer.connect(current.addr);
                     current.node = conn;
                     conn.on("open", countDown);

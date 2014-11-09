@@ -70,7 +70,7 @@ describe("PeerSamplingService", function () {
     var c = 5;
     Gossip.PeerSamplingService.init({c: c});
 
-    var view1, view2, view3;
+    var view1, view2, view3, view4, view5;
     var PSS = Gossip.PeerSamplingService;
 
     beforeEach(function() {
@@ -87,11 +87,24 @@ describe("PeerSamplingService", function () {
             {addr:"Q", hopCount:4},
             {addr:"B", hopCount:7}
         ];
+        view4 = [
+            {addr:"b", hopCount:1},
+            {addr:"a", hopCount:2}
+        ];
+        view5 = [
+            {addr:"b", hopCount:1}
+        ]
     });
 
     it("should merge distinct sets correctly", function(){
         var result = _.map(PSS.inner.merge(view1, view2), function(e){return e.addr});
         expect(result).toEqual(["H", "B", "G", "A", "E"]);
+    });
+
+    it("should merge correctly (from bug)", function () {
+        var result = PSS.inner.merge(view4,view5);
+        console.log(result);
+        expect(result).toEqual(view4);
     });
 
     it("should merge sets with equal elements correctly", function () {

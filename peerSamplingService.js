@@ -24,7 +24,7 @@
      * Count of node descriptors
      * @type {number}
      */
-    var c = 5;
+    var c = 2;
 
     var POLICY = {
         SELECT_PEER : {
@@ -53,9 +53,9 @@
     };
 
     var DEFAULT_POLICY = {
-        SELECT_PEER : POLICY.SELECT_PEER.HEAD,
-        SELECT_VIEW : POLICY.SELECT_VIEW.HEAD,
-        VIEW_PROPAGATION : POLICY.VIEW_PROPAGATION.PUSH_PULL
+        SELECT_PEER : POLICY.SELECT_PEER.RAND,
+        SELECT_VIEW : POLICY.SELECT_VIEW.RAND,
+        VIEW_PROPAGATION : POLICY.VIEW_PROPAGATION.PUSH
     };
 
     /**
@@ -88,9 +88,10 @@
     /**
      * "Active" Thread that runs forever in T time slices
      */
-    function active() {
+    function activeOld() {
         var p, myDescriptor, buffer = [];
         if (hasPeers() && !waitForPassive && !waitForActive) {
+            console.log("a");
             /*
              * {P} - waitForActive = false, waitForPassive = false
              *  C
@@ -104,6 +105,7 @@
             // When push=False we send an empty view to trigger a response
             connector.fireAndForget(
                 p, MESSAGE_TYPE.SEND_BUFFER, serialize(buffer));
+            console.log("send to " + p);
 
             if (pull) {
                 // We must ensure that the passive thread does not hit in-between
@@ -112,7 +114,7 @@
                 timeoutWaitForActive = setTimeout(function(){
                     // TIMED-OUT
                     //TODO maybe tokenize the messages..
-                    console.log("TIMEOUT! " + p);
+                    console.log("TIMEOUT! " + p + " - " + waitForActive + " | " + waitForPassive);
                     waitForActive = false;
                 }, 1000);
             }
@@ -123,7 +125,7 @@
      * Response to a REQUEST_BUFFER-Message
      * @param view
      */
-    function onPull(viewP) {
+    function onPullOld(viewP) {
         //TODO make sure that we do not hit in-between
         //TODO maybe tokenize the message to ensure we got the right one!
         /*
@@ -150,9 +152,10 @@
     /**
      * "Passive" Thread that runs forever.
      */
-    function passive(){
+    function passiveOld(){
         var desc = waitMessage(), viewP, p, myDescriptor, buffer;
         if (desc !== null) {
+            console.log("p");
             /*
              * {P} - waitForActive = false, waitForPassive = false
              *  C
@@ -169,14 +172,47 @@
             }
 
             buffer = selectionPolicy.selectView(merge(viewP, view));
-            console.log("PASSIVE");
             connector.update(buffer, function(v){
                 view = v;
                 waitForPassive = false;
-                console.log("pas", buffer);
-                console.log("passive end:", view);
             });
         }
+    };
+
+    function active() {
+        var p = selectionPolicy.selectPeer(), myDescriptor, buffer = [];
+        if (hasPeers()) {
+
+            if (push) {
+                myDescriptor = {addr: myAddress, hopCount:0};
+                buffer = merge(view, [myDescriptor]);
+            }
+            Gossip.log("a: " + p);
+            connector.fireAndForget(p, MESSAGE_TYPE.SEND_BUFFER, serialize(buffer));
+            view = increaseHopCount(view);
+
+        }
+
+
+
+    };
+
+    var passiveIsUpdating = false;
+    function passive(p, viewP) {
+        console.log("p");
+        viewP = increaseHopCount(viewP);
+        var buffer;
+        if(pull) {
+            //TODO
+        }
+        buffer = selectionPolicy.selectView(merge(viewP, view));
+        passiveIsUpdating = true;
+        connector.update(buffer, function(v){
+            console.log("done");
+            passiveIsUpdating = false;
+             view = v;
+        });
+
     };
 
     /**
@@ -240,7 +276,7 @@
         function shiftInto(from, to) {
             var e = from.shift();
             if (e.addr in tempLookup) {
-                if (e.hopCount > tempLookup[e.addr]){
+                if (e.hopCount >= tempLookup[e.addr]){
                     return false;
                 }
             }
@@ -312,19 +348,19 @@
             case POLICY.SELECT_VIEW.HEAD:
                 selectionPolicy.selectView = function (v) {
                     if (!Gossip.isDefined(v)) v = view;
-                    return head.call(this,v,false);
+                    return _.first(head.call(this,v,false), c);
                 };;
                 break;
             case POLICY.SELECT_VIEW.RAND:
                 selectionPolicy.selectView = function (v) {
                     if (!Gossip.isDefined(v)) v = view;
-                    return rand.call(this,v,false);
+                    return _.first(rand.call(this,v,false), c);
                 };
                 break;
             case POLICY.SELECT_VIEW.TAIL:
                 selectionPolicy.selectView = function (v) {
                     if (!Gossip.isDefined(v)) v = view;
-                    return tail.call(this,v,false);
+                    return _.first(tail.call(this,v,false),c);
                 };
                 break;
         }
@@ -345,7 +381,6 @@
 
         connector = new Gossip.Connector(peer);
         Gossip.PeerSamplingService.inner.connector = connector;
-        console.log("INIT");
         connector.update(view, function (availableView) {
             // The view we get here is actually available!
             // Nodes, that couldn't be reached are removed
@@ -353,7 +388,7 @@
             callback.call(this);
         });
         setInterval(active, T);
-        setInterval(passive, 1000); // 1/10 sec
+        //setInterval(passive, T/2); // 1/10 sec
 
         connector.onFail(function(id){
             Gossip.log("fireAndForget failed with: " + id);
@@ -371,9 +406,19 @@
                      break;
                  case MESSAGE_TYPE.SEND_BUFFER:
                     // put it on the Queue so it can be queried from "waitMessage"
-                    //TODO fix here
-                    //for ()
-                    bufferQueue.push({addr:id, view: deserialize(payload)});
+                    // Check, if the address is already in there
+                    /*for(var i = 0; i < bufferQueue.length; i++){
+                        if (bufferQueue[i].addr === id) {
+                            bufferQueue[i].view = deserialize(payload);
+                            return;
+                        }
+                    }
+                    bufferQueue.push({addr:id, view: deserialize(payload)});*/
+                     if (passiveIsUpdating){
+                         bufferQueue.push({addr:id, view:deserialize(payload)});
+                     } else {
+                         passive.call(this, id, deserialize(payload));
+                     }
                     break;
                  default:
 
@@ -381,6 +426,15 @@
              }
         });
     };
+
+    setInterval(function(){
+        if (!passiveIsUpdating){
+            if (bufferQueue.length > 0) {
+                var e = bufferQueue.shift();
+                passive.call(connector, e.addr, e.view);
+            }
+        }
+    },100);
 
     var bufferQueue = [];
 
