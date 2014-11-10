@@ -55,7 +55,7 @@
     var DEFAULT_POLICY = {
         SELECT_PEER : POLICY.SELECT_PEER.HEAD,
         SELECT_VIEW : POLICY.SELECT_VIEW.HEAD,
-        VIEW_PROPAGATION : POLICY.VIEW_PROPAGATION.PUSH
+        VIEW_PROPAGATION : POLICY.VIEW_PROPAGATION.PUSH_PULL
     };
 
     /**
@@ -141,9 +141,14 @@
         }
     };
 
+    function onPull(p, viewP) {
+        viewP = increaseHopCount(viewP);
+        view = selectionPolicy.selectView(merge(viewP,view));
+    };
+
 
     function passive() {
-        var msg = waitMessage(), myDescriptor, p, viewP;
+        var msg = waitMessage(), myDescriptor, p, viewP, buffer;
         if (msg !== null) {
             p = msg.addr;
             console.log("p " + p);
@@ -151,6 +156,9 @@
 
             if (pull) {
                 // TODO
+                myDescriptor = {addr: myAddress, hopCount:0};
+                buffer = merge(view,[myDescriptor]);
+                connector.fireAndForget(p, MESSAGE_TYPE.REQUEST_BUFFER_ANSWER, serialize(buffer));
             }
 
             view = connector.update(
@@ -347,7 +355,7 @@
                 //console.log("msg: " + id + " - " + payload);
                 switch (type) {
                  case MESSAGE_TYPE.REQUEST_BUFFER_ANSWER:
-                     onPull.call(connector,deserialize(payload));
+                     onPull.call(connector, id, deserialize(payload));
                      break;
                  case MESSAGE_TYPE.SEND_BUFFER:
                     // put it on the Queue so it can be queried from "waitMessage"
