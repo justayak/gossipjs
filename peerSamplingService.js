@@ -24,7 +24,7 @@
      * Count of node descriptors
      * @type {number}
      */
-    var c = 2;
+    var c = 3;
 
     var POLICY = {
         SELECT_PEER : {
@@ -53,8 +53,8 @@
     };
 
     var DEFAULT_POLICY = {
-        SELECT_PEER : POLICY.SELECT_PEER.HEAD,
-        SELECT_VIEW : POLICY.SELECT_VIEW.HEAD,
+        SELECT_PEER : POLICY.SELECT_PEER.RAND,
+        SELECT_VIEW : POLICY.SELECT_VIEW.RAND,
         VIEW_PROPAGATION : POLICY.VIEW_PROPAGATION.PUSH_PULL
     };
 
