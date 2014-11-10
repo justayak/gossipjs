@@ -13,7 +13,7 @@
      * Times in millis for active thread
      * @type {number}
      */
-    var T = 5000;
+    var T = 1000;
 
     /**
      * @type {String}
@@ -85,101 +85,8 @@
     var waitForPassive = false;
     var timeoutWaitForActive = null;
 
-    /**
-     * "Active" Thread that runs forever in T time slices
-     */
+    /*
     function activeOld() {
-        var p, myDescriptor, buffer = [];
-        if (hasPeers() && !waitForPassive && !waitForActive) {
-            console.log("a");
-            /*
-             * {P} - waitForActive = false, waitForPassive = false
-             *  C
-             * {Q} - waitForActive = true / when {pull}, waitForPassive = false
-             */
-            p = selectionPolicy.selectPeer();
-            if (push){
-                myDescriptor = {addr: myAddress, hopCount: 0};
-                buffer = merge(view, [myDescriptor]);
-            }
-            // When push=False we send an empty view to trigger a response
-            connector.fireAndForget(
-                p, MESSAGE_TYPE.SEND_BUFFER, serialize(buffer));
-            console.log("send to " + p);
-
-            if (pull) {
-                // We must ensure that the passive thread does not hit in-between
-                // our pull-request
-                waitForActive = true;
-                timeoutWaitForActive = setTimeout(function(){
-                    // TIMED-OUT
-                    //TODO maybe tokenize the messages..
-                    console.log("TIMEOUT! " + p + " - " + waitForActive + " | " + waitForPassive);
-                    waitForActive = false;
-                }, 1000);
-            }
-        }
-    };
-
-    /**
-     * Response to a REQUEST_BUFFER-Message
-     * @param view
-     */
-    function onPullOld(viewP) {
-        //TODO make sure that we do not hit in-between
-        //TODO maybe tokenize the message to ensure we got the right one!
-        /*
-         * {P} - waitForActive = true, waitForPassive = false
-         *  C
-         * {Q} - waitForActive = false, waitForPassive = false
-         */
-        if (!waitForActive) {
-            Gossip.log("Out-of-Sync PULL Timed-out");
-        } else if (!waitForPassive){
-            viewP = increaseHopCount(viewP);
-            var buffer = merge(viewP, view);
-            buffer = selectionPolicy.selectView(buffer);
-            console.log("PULL");
-            connector.update(buffer, function (v) {
-                waitForActive = false;
-                view = v;
-                console.log("active end: ", view);
-            });
-        }
-
-    }
-
-    /**
-     * "Passive" Thread that runs forever.
-     */
-    function passiveOld(){
-        var desc = waitMessage(), viewP, p, myDescriptor, buffer;
-        if (desc !== null) {
-            console.log("p");
-            /*
-             * {P} - waitForActive = false, waitForPassive = false
-             *  C
-             * {Q} - waitForActive = false, waitForPassive = false
-             */
-            waitForPassive = true;
-            p = desc.addr;
-            viewP = increaseHopCount(desc.view);
-
-            if (pull) {
-                myDescriptor = {addr: myAddress, hopCount:0};
-                buffer = merge(view, [myDescriptor]);
-                connector.fireAndForget(p, MESSAGE_TYPE.REQUEST_BUFFER_ANSWER, serialize(buffer));
-            }
-
-            buffer = selectionPolicy.selectView(merge(viewP, view));
-            connector.update(buffer, function(v){
-                view = v;
-                waitForPassive = false;
-            });
-        }
-    };
-
-    function active() {
         var p = selectionPolicy.selectPeer(), myDescriptor, buffer = [];
         if (hasPeers()) {
 
@@ -198,7 +105,7 @@
     };
 
     var passiveIsUpdating = false;
-    function passive(p, viewP) {
+    function passiveOld(p, viewP) {
         console.log("p");
         viewP = increaseHopCount(viewP);
         var buffer;
@@ -213,7 +120,44 @@
              view = v;
         });
 
+    };*/
+
+    function active() {
+        var p, myDescriptor, buffer = [];
+        if (hasPeers()){
+            p = selectionPolicy.selectPeer()
+
+            if (push){
+                myDescriptor = {addr: myAddress, hopCount:0};
+                buffer = merge(view, [myDescriptor]);
+            }
+
+            console.log("a " + p );
+            connector.send(p, MESSAGE_TYPE.SEND_BUFFER, serialize(buffer));
+
+            if (pull) {
+                // TODO
+            }
+        }
     };
+
+
+    function passive() {
+        var msg = waitMessage(), myDescriptor, p, viewP;
+        if (msg !== null) {
+            p = msg.addr;
+            console.log("p " + p);
+            viewP = increaseHopCount(msg.view);
+
+            if (pull) {
+                // TODO
+            }
+
+            view = connector.update(
+                selectionPolicy.selectView(merge(viewP, view)));
+
+        }
+    }
 
     /**
      * Increment the hop count of every element in the view
@@ -349,7 +293,7 @@
                 selectionPolicy.selectView = function (v) {
                     if (!Gossip.isDefined(v)) v = view;
                     return _.first(head.call(this,v,false), c);
-                };;
+                };
                 break;
             case POLICY.SELECT_VIEW.RAND:
                 selectionPolicy.selectView = function (v) {
@@ -388,7 +332,7 @@
             callback.call(this);
         });
         setInterval(active, T);
-        //setInterval(passive, T/2); // 1/10 sec
+        setInterval(passive, T/6); // 1/10 sec
 
         connector.onFail(function(id){
             Gossip.log("fireAndForget failed with: " + id);
@@ -400,25 +344,26 @@
         });
 
         connector.onMessage(function(id, type, payload){
-             switch (type) {
+                //console.log("msg: " + id + " - " + payload);
+                switch (type) {
                  case MESSAGE_TYPE.REQUEST_BUFFER_ANSWER:
                      onPull.call(connector,deserialize(payload));
                      break;
                  case MESSAGE_TYPE.SEND_BUFFER:
                     // put it on the Queue so it can be queried from "waitMessage"
                     // Check, if the address is already in there
-                    /*for(var i = 0; i < bufferQueue.length; i++){
+                    for(var i = 0; i < bufferQueue.length; i++){
                         if (bufferQueue[i].addr === id) {
                             bufferQueue[i].view = deserialize(payload);
                             return;
                         }
                     }
-                    bufferQueue.push({addr:id, view: deserialize(payload)});*/
-                     if (passiveIsUpdating){
+                    bufferQueue.push({addr:id, view: deserialize(payload)});
+                     /*if (passiveIsUpdating){
                          bufferQueue.push({addr:id, view:deserialize(payload)});
                      } else {
                          passive.call(this, id, deserialize(payload));
-                     }
+                     }*/
                     break;
                  default:
 
@@ -427,6 +372,7 @@
         });
     };
 
+    /*
     setInterval(function(){
         if (!passiveIsUpdating){
             if (bufferQueue.length > 0) {
@@ -435,6 +381,7 @@
             }
         }
     },100);
+    */
 
     var bufferQueue = [];
 
@@ -443,11 +390,11 @@
      * @returns {Descriptor}
      */
     function waitMessage() {
-        if (!waitForActive && !waitForPassive){
+        //if (!waitForActive && !waitForPassive){
             if (bufferQueue.length > 0) {
                 return bufferQueue.shift();
             }
-        }
+        //}
         return null;
     };
 

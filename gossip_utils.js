@@ -199,7 +199,7 @@
                 switch (d.type) {
                     case MESSAGE_TYPE.PING:
                         if (! (conn.peer in self.blockedPings)) {
-                            self.fireAndForget(conn.peer, MESSAGE_TYPE.PONG, undefined ,true);
+                            self.fireAndForget(conn.peer, MESSAGE_TYPE.PONG);
                             self.blockedPings[conn.peer] = true;
                             setTimeout(function () {
                                 delete self.blockedPings[conn.peer];
@@ -231,12 +231,16 @@
             // Test all elements in the view
             var view = self.view;
             var i = 0, L = view.length, current;
-            function success(){};
+            function success(id){
+                self._resetMarkAsUnreachable(id);
+            };
             function failure(id){
-                self.remove(id);
-                var i = 0, L = self.onRemoveCallbacks.length, cbs = self.onRemoveCallbacks;
-                for(;i<L;i++) {
-                    cbs[i].call(self, id);
+                if (self._onMarkAsUnreachable(id)){
+                    self.remove(id);
+                    var i = 0, L = self.onRemoveCallbacks.length, cbs = self.onRemoveCallbacks;
+                    for(;i<L;i++) {
+                        cbs[i].call(self, id);
+                    }
                 }
             };
             for(;i<L;i++) {
@@ -296,6 +300,43 @@
     };
 
     /**
+     * marks an id to be unreachable. If it is hit more than 5 times in a row it will be deleted!
+     * @param id {String}
+     * @returns {boolean} True: got hit 5+ times -> Delete
+     * @private
+     */
+    Connector.prototype._onMarkAsUnreachable = function (id) {
+        var current, view = this.view, L = this.view.length, i = 0;
+        for(;i<L;i++) {
+            current = view[i];
+            if (current.addr === id) {
+                current["unreachable"] = ("unreachable" in current) ? current.unreachable + 1 : 1;
+                if (current.unreachable >= 5) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+        return false;
+    };
+
+    /**
+     * gives back the 5 lifes to the Node
+     * @param id
+     * @private
+     */
+    Connector.prototype._resetMarkAsUnreachable = function (id) {
+        var current, view = this.view, L = this.view.length, i = 0;
+        for(;i<L;i++) {
+            current = view[i];
+            if (current.addr === id) {
+                current["unreachable"] = 0;
+            }
+        }
+    };
+
+    /**
      * Removes a node from the Connector
      * @param id {String}
      * @returns {boolean} True when removal was successful, otherwise false
@@ -327,7 +368,15 @@
         for(;i < L; i++){
             current = view[i];
             if (current.addr === id) {
-                current.node.send(createMessage(type, message));
+                if ("node" in current) {
+                    current.node.send(createMessage(type, message));
+                } else {
+                    //TODO check if some messages at the beginning might get lost
+                    current.node = this.peer.connect(id);
+                    current.node.on("open", function () {
+                        conn.send(createMessage(type, message));
+                    });
+                }
                 return true;
             }
         }
@@ -358,7 +407,6 @@
                         return;
                     }
                 }
-                ffI[addr].close();
                 delete ffI[addr];
             }
         }
@@ -396,7 +444,7 @@
      */
     Connector.prototype.test = function (id, success, failure) {
         if (! (id in testNode)) {
-            this.fireAndForget(id, MESSAGE_TYPE.PING, undefined, true);
+            this.fireAndForget(id, MESSAGE_TYPE.PING);
             var self = this;
             testNode[id] = {
                 success : success,
@@ -414,37 +462,21 @@
      * @param id {String}
      * @param type {number}
      * @param message {Object}
-     * @param burst {boolean} if true a message will be send 3 times in a row to "fight" package lose
      */
-    Connector.prototype.fireAndForget = function(id, type, message, burst) {
+    Connector.prototype.fireAndForget = function(id, type, message) {
         //log("Fire-and-Forget: Target: {" + id + "}");
-        burst = Gossip.isDefined(burst) ? burst : false;
+        //burst = Gossip.isDefined(burst) ? burst : false;
         var view = this.view, L = this.view.length, i = 0, current;
         if (id in fireAndForgetItems) {
             fireAndForgetItems[id].node.send(createMessage(type, message));
-            if (burst){
-                setTimeout(function () {
-                    fireAndForgetItems[id].node.send(createMessage(type, message));
-                },10);
-                setTimeout(function () {
-                    fireAndForgetItems[id].node.send(createMessage(type, message));
-                },30);
-            }
             fireAndForgetItems[id].ts = Date.now(); // update timestamp
         } else {
             // see, if we already use this id
             for(;i<L;i++){
                 current = view[i];
                 if (current.addr === id) {
-                    current.node.send(createMessage(type, message));
-                    if (burst){
-                        setTimeout(function () {
-                            current.node.send(createMessage(type, message));
-                        },10);
-                        setTimeout(function () {
-                            current.node.send(createMessage(type, message));
-                        },30);
-                    }
+                    //current.node.send(createMessage(type, message));
+                    this.send(id, type, message); // TODO Make this perform better..
                     return;
                 }
             }
@@ -453,14 +485,6 @@
             conn.on("open", function(){
                 fireAndForgetItems[conn.peer] = {node:conn, ts: Date.now()};
                 conn.send(createMessage(type, message));
-                if (burst){
-                    setTimeout(function () {
-                        conn.send(createMessage(type, message));
-                    },10);
-                    setTimeout(function () {
-                        conn.send(createMessage(type, message));
-                    },30);
-                }
                 //conn.close();
                 //TODO figure out if we need to do more stuff to close it..
             });
@@ -491,8 +515,11 @@
      * @param callback {function}
      */
     Connector.prototype.update = function(view, callback){
+        var async = Gossip.isDefined(callback);
         if (view === null) view = [];
-        if (this._notifyUpdateAboutFail !== null) throw "Concurrent update running!";
+        if (async && this._notifyUpdateAboutFail !== null) {
+            throw "Concurrent update running!";
+        }
         //TODO close the connections that are not used anymore!
         //TODO make sure that the connections are gc'd!
         //TODO put a timeout
@@ -522,24 +549,27 @@
         }
 
         if (view.length > 0) {
-            this._notifyUpdateAboutFail = countDown;
+            if (async) this._notifyUpdateAboutFail = countDown;
             for(; i < view.length; i++){
                 current = view[i];
                 expectedCallbacks += 1;
                 if ("node" in current) {
-                    countDown();
+                    if (async) countDown();
                 } else {
                     var conn = peer.connect(current.addr);
                     current.node = conn;
-                    conn.on("open", countDown);
+                    if (async) conn.on("open", countDown);
                 }
             }
         } else {
             // async return
-            setTimeout(function(){
-                callback.call(self, self.view);
-            },10);
+            if (async) {
+                setTimeout(function(){
+                    callback.call(self, self.view);
+                },10);
+            }
         }
+        return view;
     };
 
     /*
