@@ -132,7 +132,7 @@
                 buffer = merge(view, [myDescriptor]);
             }
 
-            console.log("a " + p );
+            console.log("a " + p  + " -> " + serialize(buffer));
             connector.send(p, MESSAGE_TYPE.SEND_BUFFER, serialize(buffer));
 
             if (pull) {
@@ -143,7 +143,9 @@
 
     function onPull(p, viewP) {
         viewP = increaseHopCount(viewP);
-        view = selectionPolicy.selectView(merge(viewP,view));
+        view = connector.update(
+            selectionPolicy.selectView(merge(viewP,view)));
+        console.log("p " + p + " <- " + serialize(view));
     };
 
 
@@ -151,7 +153,6 @@
         var msg = waitMessage(), myDescriptor, p, viewP, buffer;
         if (msg !== null) {
             p = msg.addr;
-            console.log("p " + p);
             viewP = increaseHopCount(msg.view);
 
             if (pull) {
@@ -163,7 +164,7 @@
 
             view = connector.update(
                 selectionPolicy.selectView(merge(viewP, view)));
-
+            console.log("p " + p + " <- " + view);
         }
     }
 
