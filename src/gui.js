@@ -56,7 +56,9 @@ define([
 
                                 // TMAN
 
-                                peers = TMan.getPeers();
+                                peers = _.orderBy(TMan.getPeers(), function (e) {
+                                    return e.profile;
+                                });
                                 html = "<div>TMAN [" + peers.length +"]</div>";
 
                                 for(var i = 0; i < peers.length; i++) {
