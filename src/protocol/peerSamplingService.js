@@ -133,7 +133,7 @@ define([
                 break;
             case POLICY.SELECT_VIEW.RAND:
                 selectionPolicy.selectView = function (v) {
-                    if (myAddress === "a") console.log(v);
+                    if (myAddress === "a") console.log(JSON.stringify(v));
                     if (!def(v)) v = view;
                     return _.first(rand.call(this,v,false), c);
                 };
