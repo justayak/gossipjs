@@ -11,8 +11,19 @@ requirejs.config({
     }
 });
 
-define(["jQuery", "underscore", "peer", "utils"], function (a,b,c, Utils) {
+define([
+    "jQuery",
+    "underscore",
+    "peer",
+    "utils",
+    "config",
+    "externals",
+    "LocalPeer",
+    "gui"],
+function (a,b,c, Utils, Config, d, LocalPeer, gui) {
 
-    Utils.debug(true);
+    Config.debug(true);
+
+    gui.init();
 
 });
