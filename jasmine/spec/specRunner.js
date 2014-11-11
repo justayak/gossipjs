@@ -17,7 +17,8 @@ require([
     "underscore",
     "peer",
     "spec/PeerSamplingServiceSpec",
-    "config"], function (a,b,c,d, Config) {
+    "spec/T_ManSpec",
+    "config"], function (a,b,c,d,e, Config) {
 
     jasmine.getEnv().execute();
 

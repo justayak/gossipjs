@@ -24,14 +24,25 @@ define([
                             port: 9000,
                             bootstrapPort: 9001
                         });
+                        var profile = Utils.randomInt(1,99);
                         $("#start").html(
-                            "<h2>" + name + "</h2>"
+                            "<h2>" + name + " [" + profile +"]</h2>"
                         );
 
                         LocalPeer.load(function (peer, bootstrap) {
 
+
                             TMan.init({
-                                bootstrap: bootstrap
+                                bootstrap: bootstrap,
+                                profile : profile,
+                                rankingFunc : function (x, list) {
+                                    return _.sortBy(list, function (e) {
+                                        if (!("profile" in e)) {
+                                            return Math.MAX_VALUE;
+                                        };
+                                        return Math.abs(e.profile - x);
+                                    })
+                                }
                             });
 
 
@@ -42,22 +53,19 @@ define([
                                     html += JSON.stringify(peers[i]) + "</br>";
                                 }
                                 $("#data").html(html);
+
+                                // TMAN
+
+                                peers = TMan.getPeers();
+                                html = "<div>TMAN [" + peers.length +"]</div>";
+
+                                for(var i = 0; i < peers.length; i++) {
+                                    html += JSON.stringify(peers[i]) + "</br>";
+                                }
+
+                                $("#tman").html(html);
+
                             }, 900);
-
-                            /*
-                            var i = 0, L = bootstrap.length;
-                            for(;i<L;i++) {
-                                peer.send(bootstrap[i], 5, "hello");
-                            }
-
-                            peer.onMessage(function(id, type, msg) {
-                                console.log("{"+id+"}[" + type+"][" + msg + "]");
-                            });
-
-                            peer.onPeerLost(function (id) {
-                                console.log("lost:" + id);
-                            });
-                            */
 
 
 

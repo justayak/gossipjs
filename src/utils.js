@@ -38,6 +38,29 @@ define([
             return (Math.floor(Math.random() * (max - min + 1)) + min)|0;
         },
 
+        removeFromBuffer: function (id, view) {
+            var i = 0, L = view.length;
+            for(;i<L;i++) {
+                if (view[i].addr === id) {
+                    view.splice(i,1);
+                    break;
+                }
+            }
+            return view;
+        },
+
+        sanitize: function (peer,buffer,myAddress) {
+            var i = 0, L = buffer.length;
+            var result = [], addr;
+            for(;i<L;i++) {
+                addr = buffer[i].addr;
+                if (addr !== myAddress && !peer.isRecentlyLost(addr)) {
+                    result.push(buffer[i]);
+                }
+            }
+            return result;
+        },
+
         /**
          *
          * @param p {number} between 1 and 0
