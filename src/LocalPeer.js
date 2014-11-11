@@ -20,6 +20,7 @@ define([
         var port = Config.port();
         var bootstrapPort = Config.bootstrapPort();
         var host = Config.host();
+        var self = this;
 
         log("Establish as node {" + name + "}");
         log("Connect to broker {" + host + ":" + port + "}");
@@ -46,10 +47,22 @@ define([
         });
 
         peer.on("error", function (e) {
-            log(e);
+            switch (e.type) {
+                case "peer-unavailable":
+                    var i= 0,L=self.onLostPeerCallbacks.length;
+                    var cb = self.onLostPeerCallbacks;
+                    var peer = err.message.substr(26);
+                    delete neighbors[peer];
+                    for(;i<L;i++) {
+                        cb.call(self, peer);
+                    }
+                    break
+                default :
+                    log(e);
+                    break;
+            }
         });
 
-        var self = this;
         peer.on("open", function () {
             function _init() {
                 var i= 0, U, bsNodes=[], L;

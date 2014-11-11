@@ -77,6 +77,17 @@ define([
     function init(options) {
         var def = Utils.isDefined, policy = DEFAULT_POLICY, bootstrap=[]; // ["A", "B", ..]
         peer = LocalPeer.get();
+
+        peer.onPeerLost(function (id) {
+            Utils.log("We lost connection to " + id );
+            for(var i = 0; i < view.length;i++) {
+                if (view[i].addr === id) {
+                    view.splice(i,1);
+                    break;
+                }
+            }
+        });
+
         myAddress = peer.name;
         if (def(options)){
             c = def(options.c) ? options.c : c;
