@@ -53,9 +53,9 @@
     };
 
     var DEFAULT_POLICY = {
-        SELECT_PEER : POLICY.SELECT_PEER.RAND,
+        SELECT_PEER : POLICY.SELECT_PEER.TAIL,
         SELECT_VIEW : POLICY.SELECT_VIEW.RAND,
-        VIEW_PROPAGATION : POLICY.VIEW_PROPAGATION.PUSH_PULL
+        VIEW_PROPAGATION : POLICY.VIEW_PROPAGATION.PUSH
     };
 
     /**
@@ -341,7 +341,7 @@
             callback.call(this);
         });
         setInterval(active, T);
-        setInterval(passive, T/6); // 1/10 sec
+        setInterval(passive, T/c);
 
         connector.onFail(function(id){
             Gossip.log("fireAndForget failed with: " + id);
