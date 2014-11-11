@@ -164,7 +164,7 @@
 
             view = connector.update(
                 selectionPolicy.selectView(merge(viewP, view)));
-            console.log("p " + p + " <- " + view);
+            console.log("p " + p + " <- " + serialize(view));
         }
     }
 
