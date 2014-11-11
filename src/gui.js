@@ -30,7 +30,7 @@ define([
 
                         LocalPeer.load(function (peer, bootstrap) {
 
-                            PeerSamplingService.init({
+                            TMan.init({
                                 bootstrap: bootstrap
                             });
 

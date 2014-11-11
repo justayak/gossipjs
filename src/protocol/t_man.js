@@ -8,11 +8,25 @@ define([
     "messageType"
 ], function (Utils, LocalPeer, PeerSamplingService, MESSAGE_TYPE) {
 
+
+    var myProfile = 5;
+
+    var peer = null;
+
+
     /**
      *
      */
-    function init() {
-        PeerSamplingService.init();
+    function init(options) {
+
+        PeerSamplingService.init({
+            myProfile : myProfile,
+            bootstrap : options.bootstrap
+        });
+
+        peer = LocalPeer.get();
+
+
     };
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

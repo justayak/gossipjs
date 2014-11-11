@@ -57,6 +57,12 @@ define([
         }
     };
 
+    /**
+     * This can be anything. It piggybacks on the exchange protocol, if it is set
+     * @type {Object}
+     */
+    var myProfile = null;
+
     var push = false;
     var pull = false;
 
@@ -83,6 +89,9 @@ define([
                 policy = options.policy;
             }
             bootstrap = def(options.bootstrap) ? options.bootstrap : bootstrap;
+            if (def(options.profile)) {
+                myProfile = options.profile;
+            }
         }
 
         peer = LocalPeer.get();
@@ -183,8 +192,7 @@ define([
     };
 
     /**
-     * Merge the views, return a max of c elements. The nodes with
-     * the lowest hopCount are prefered
+     * Merge the views. The nodes with the lower hopCounts are preferred
      * @param view1 {Object} see view
      * @param view2 {Object} see view
      */
@@ -198,11 +206,11 @@ define([
         function shiftInto(from, to) {
             var e = from.shift();
             if (e.addr in tempLookup) {
-                if (e.hopCount >= tempLookup[e.addr]){
+                if (e.hopCount >= tempLookup[e.addr].hopCount){
                     return false;
                 }
             }
-            tempLookup[e.addr] = e.hopCount;
+            tempLookup[e.addr] = e;
             to.push(e);
             return true;
         }
@@ -292,7 +300,7 @@ define([
      * @returns {string}
      */
     function serialize(buffer) {
-        if (buffer.length === 0) return "#";
+        /*if (buffer.length === 0) return "#";
         var result = "", i = 0, L = buffer.length;
         for (;i<L;i++){
             result += buffer[i].addr + ":" + buffer[i].hopCount;
@@ -300,7 +308,8 @@ define([
                 result += ",";
             }
         }
-        return result;
+        return result;*/
+        return JSON.stringify(buffer);
     };
 
     /**
@@ -309,7 +318,7 @@ define([
      * @returns {Array}
      */
     function deserialize(str) {
-        if (str === "#") return [];
+        /*if (str === "#") return [];
         var buffer = [];
         var U = str.split(",");
         var i = 0, L = U.length, current;
@@ -320,7 +329,8 @@ define([
                 hopCount : parseInt(current[1],10)
             });
         }
-        return buffer;
+        return buffer;*/
+        return JSON.parse(str);
     };
 
     var bufferQueue = [];
@@ -343,7 +353,7 @@ define([
     }
 
     /**
-     * removes the own node from a buffer
+     * removes the own node from a buffer or thous that are already lost
      * @param buffer
      * @returns {*}
      */
@@ -359,6 +369,14 @@ define([
         return result;
     }
 
+    function createMyDescriptor() {
+        var result = {addr:myAddress, hopCount:0};
+        if (myProfile !== null) {
+            result.profile = myProfile;
+        }
+        return result;
+    };
+
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      T H R E A D S
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -368,7 +386,7 @@ define([
         if (p !== null) {
 
             if (push) {
-                myDescriptor = {addr: myAddress, hopCount:0};
+                myDescriptor = createMyDescriptor();
                 buffer = merge(view, [myDescriptor]);
             }
 
@@ -395,7 +413,7 @@ define([
             p = m.addr; viewP = increaseHopCount(m.view);
 
             if (pull) {
-                myDescriptor = {addr: myAddress, hopCount:0};
+                myDescriptor = createMyDescriptor();
                 buffer = merge(view,[myDescriptor]);
                 sendBufferTo(buffer, p, true);
             }

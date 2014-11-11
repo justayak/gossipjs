@@ -102,7 +102,7 @@ define([
 
         it("should serialize correctly", function () {
             var ser = PSS.inner.serialize(view3);
-            expect(ser).toEqual("A:1,Q:4,B:7");
+            expect(ser).toEqual('[{"addr":"A","hopCount":1},{"addr":"Q","hopCount":4},{"addr":"B","hopCount":7}]');
         });
 
         it("should serialize empty list correctly", function () {
@@ -112,7 +112,7 @@ define([
         });
 
         it("should deserialize correctly", function () {
-            var des = PSS.inner.deserialize("A:1,Q:4,B:7");
+            var des = PSS.inner.deserialize('[{"addr":"A","hopCount":1},{"addr":"Q","hopCount":4},{"addr":"B","hopCount":7}]');
             expect(des).toEqual(view3);
         });
 
