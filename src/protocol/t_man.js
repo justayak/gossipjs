@@ -67,6 +67,29 @@ define([
      */
     function merge(view1, view2) {
         //TODO improve this shit asap
+
+        var lookup = {}, result = [], i, L1=view1.length, L2=view2.length, current;
+        for(i=0;i<L1;i++) {
+            current = view1[i];
+            lookup[current.addr] = current;
+        }
+        for(i=0;i<L2;i++) {
+            current = view2[i];
+            if (current.addr in lookup) {
+                if (Utils.isDefined(current.profile)) {
+                    lookup[current.addr] = current;
+                }
+            } else {
+                lookup[current.addr] = current;
+            }
+        }
+        var key;
+        for(key in lookup) {
+            result.push(lookup[key]);
+        }
+        return result;
+
+        /*
         var lookup = {}, result = [], i, L1=view1.length, L2=view2.length, current;
         for(i=0;i<L1;i++) {
             current = view1[i];
@@ -93,6 +116,7 @@ define([
             }
         }
         return result;
+        */
     };
 
     /**

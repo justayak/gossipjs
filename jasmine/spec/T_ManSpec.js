@@ -18,7 +18,7 @@ define([
             }
         });
 
-        var view1, view2, view3;
+        var view1, view2, view3, view4;
 
         beforeEach(function () {
             view1 = [
@@ -37,7 +37,12 @@ define([
             view3 = [
                 {addr:"Z", profile:1},
                 {addr:"B", profile:5}
-                ]
+                ];
+
+            view4 = [
+                {addr:"Z"},
+                {addr:"B"}
+            ]
         });
 
         it("should merge correct", function () {
@@ -50,7 +55,15 @@ define([
             expect(_.pluck(result, "addr")).toEqual(["A","B","C","D","Z"]);
         });
 
+        it("should merge correct and keep the profile (intersect)", function () {
+            var result = TMan.inner.merge(view3,view4);
+            expect(result).toEqual(view3);
+        });
 
+        it("should merge correct and keep the profile (backwards) (intersect)", function () {
+            var result = TMan.inner.merge(view4,view3);
+            expect(result).toEqual(view3);
+        });
     });
 
 
