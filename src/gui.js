@@ -59,7 +59,8 @@ define([
                                 peers = TMan.getPeers();
                                 for(var i = 0; i < peers.length; i++) {
                                     if (!("profile" in peers[i])){
-                                        peers[i].profile = Number.MAX_VALUE;
+                                        //clean.push(peers[i]).addr;
+                                        //peers[i].profile = Number.MAX_VALUE;
                                     }
                                 }
                                 peers = _.sortBy(peers, function (e) {
