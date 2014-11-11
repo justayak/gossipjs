@@ -11,7 +11,7 @@ define([
      * Count of node descriptors
      * @type {number}
      */
-    var c = 5;
+    var c = 3;
 
     /**
      * Times in millis for active thread
@@ -75,7 +75,7 @@ define([
      *
      */
     function init(options) {
-        var def = Utils.isDefined, policy = DEFAULT_POLICY;
+        var def = Utils.isDefined, policy = DEFAULT_POLICY, bootstrap=[]; // ["A", "B", ..]
         peer = LocalPeer.get();
         myAddress = peer.name;
         if (def(options)){
@@ -84,6 +84,11 @@ define([
             if (def(options.policy)) {
                 policy = options.policy;
             }
+            bootstrap = def(options.bootstrap) ? options.bootstrap : bootstrap;
+        }
+
+        for(var i=0; i < bootstrap.length; i++) {
+            view.push({addr: bootstrap[i], hopCount:1});
         }
 
         switch (policy.SELECT_PEER){
@@ -149,12 +154,16 @@ define([
             switch (type) {
                 case MESSAGE_TYPE.PSS_BUFFER:
                     for(i=0,L=bufferQueue.length;i<L;i++){
+                        //TODO maybe its clever to send a ts here as well..
                         if (bufferQueue[i].addr === id) {
                             bufferQueue[i].view = deserialize(payload);
                             return;
                         }
                     }
                     bufferQueue.push({addr: id, view:deserialize(payload)});
+                    break;
+                case MESSAGE_TYPE.PSS_BUFFER_PULL:
+                    onPull.call(peer, id, deserialize(payload));
                     break;
             }
         });
@@ -314,8 +323,26 @@ define([
         return null;
     };
 
-    function sendBufferTo(buffer, to) {
-        peer.send(to, MESSAGE_TYPE.PSS_BUFFER, serialize(buffer));
+    function sendBufferTo(buffer, to, isPull) {
+        var type = MESSAGE_TYPE.PSS_BUFFER;
+        if (isPull) MESSAGE_TYPE.PSS_BUFFER_PULL;
+        peer.send(to, type, serialize(buffer));
+    }
+
+    /**
+     * removes the own node from a buffer
+     * @param buffer
+     * @returns {*}
+     */
+    function sanitize(buffer) {
+        var i = 0, L = buffer.length;
+        for(;i<L;i++) {
+            if (buffer[i].addr === myAddress) {
+                buffer.splice(i,1);
+                break;
+            }
+        }
+        return buffer;
     }
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -328,7 +355,7 @@ define([
 
             if (push) {
                 myDescriptor = {addr: myAddress, hopCount:0};
-                buffer = merge(view, myDescriptor);
+                buffer = merge(view, [myDescriptor]);
             }
 
             sendBufferTo(buffer, p);
@@ -340,9 +367,29 @@ define([
         }
     };
 
+    function onPull(p, viewP) {
+        viewP = increaseHopCount(viewP);
+        view = selectionPolicy.selectView(
+            sanitize(merge(viewP, view))
+        );
+    };
+
 
     function passive() {
+        var m = waitMessage(), p, viewP, myDescriptor, buffer;
+        if (m !== null) {
+            p = m.addr; viewP = increaseHopCount(m.view);
 
+            if (pull) {
+                myDescriptor = {addr: myAddress, hopCount:0};
+                buffer = merge(view,[myDescriptor]);
+                sendBufferTo(buffer, p, true);
+            }
+
+            buffer = merge(viewP, view);
+            view = selectionPolicy.selectView(sanitize(buffer));
+
+        }
     }
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -351,6 +398,9 @@ define([
 
     return {
         init: init,
+        getPeers: function () {
+            return view;
+        },
         inner: {
             merge: merge,
             rand: rand,

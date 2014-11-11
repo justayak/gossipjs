@@ -5,6 +5,7 @@ define([], function () {
     return {
         ARE_YOU_ALIVE: 0,
         I_AM_ALIVE : 1,
-        PSS_BUFFER : 2
+        PSS_BUFFER : 2,
+        PSS_BUFFER_PULL: 3
     }
 });

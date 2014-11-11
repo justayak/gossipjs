@@ -172,6 +172,7 @@ define([
         for (;i<L;i++) {
             delete N[deleteKeys[i]];
         }
+        console.log("neighbors: ",  neighbors);
     };
 
     /**

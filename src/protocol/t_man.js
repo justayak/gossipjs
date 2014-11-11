@@ -12,7 +12,7 @@ define([
      *
      */
     function init() {
-
+        PeerSamplingService.init();
     };
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

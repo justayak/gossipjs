@@ -5,8 +5,9 @@ define([
     "config",
     "utils",
     "LocalPeer",
-    "protocol/t_man"
-], function (Config, Utils, LocalPeer, TMan) {
+    "protocol/t_man",
+    "protocol/peerSamplingService"
+], function (Config, Utils, LocalPeer, TMan, PeerSamplingService) {
 
     return {
 
@@ -28,6 +29,22 @@ define([
                         );
 
                         LocalPeer.load(function (peer, bootstrap) {
+
+                            PeerSamplingService.init({
+                                bootstrap: bootstrap
+                            });
+
+
+                            setInterval(function () {
+                                var peers = PeerSamplingService.getPeers();
+                                var html = "";
+                                for(var i = 0; i < peers.length; i++) {
+                                    html += JSON.stringify(peers[i]) + "</br>";
+                                }
+                                $("#data").html(html);
+                            }, 900);
+
+                            /*
                             var i = 0, L = bootstrap.length;
                             for(;i<L;i++) {
                                 peer.send(bootstrap[i], 5, "hello");
@@ -40,6 +57,8 @@ define([
                             peer.onPeerLost(function (id) {
                                 console.log("lost:" + id);
                             });
+                            */
+
 
 
                         });
