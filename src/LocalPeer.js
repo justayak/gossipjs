@@ -3,8 +3,9 @@
  */
 define([
     "utils",
-    "config"
-], function (Utils, Config) {
+    "config",
+    "messageType"
+], function (Utils, Config, MESSAGE_TYPE) {
 
     var instance = null;
     var callback = null;
@@ -29,11 +30,12 @@ define([
             path : "/b"
         });
 
+        this.onMessageCallbacks = [];
+        this.onLostPeerCallbacks = [];
         var bootstraped = false;
         var bootstrap = "[]";
         TxtLoader.get("http://" + host + ":" + bootstrapPort, {
             success: function(txt){
-                log("bootstrapping: " + txt);
                 bootstraped = true;
                 bootstrap = txt;
             },
@@ -55,8 +57,11 @@ define([
                     U = bootstrap.replace("[","").replace("]","").split(",");
                     L = U.length;
                     for(;i<L;i++) {
-                        bsNodes.push(U[i]);
+                        if (U[i] !== self.name && U[i].length > 0) {
+                            bsNodes.push(U[i]);
+                        }
                     }
+                    log("bootstrapping: " + JSON.stringify(bsNodes));
                     self.bootstrap = bsNodes;
                     callback.call(self, self, bsNodes);
                 } else {
@@ -65,7 +70,85 @@ define([
             }
             _init();
             setInterval(cleanNeighbors, 60*1000); // every minute
+            setInterval(checkLostPeers,  2*1000); // every 2 seconds
         });
+
+        peer.on("connection", function (conn) {
+            conn.on('data', function (d) {
+                if (Utils.isString(d)) {
+                    d = JSON.parse(d);
+                }
+                self._handleMessage(conn.peer, d.type, d.payload);
+            });
+        });
+
+    };
+
+    /**
+     * Handles incoming messages
+     * @param id
+     * @param type
+     * @param payload
+     * @private
+     */
+    LocalPeer.prototype._handleMessage = function(id, type, payload) {
+        var i = 0, L = this.onMessageCallbacks.length, M = this.onMessageCallbacks;
+        var current;
+        if (id in neighbors) {
+            current = neighbors[id];
+            current.missedCalls = 0; // reset
+            if (current.timeoutThread !== null) {
+                clearTimeout(current.timeoutThread);
+                current.timeoutThread = null;
+            }
+        }
+        switch (type){
+            case MESSAGE_TYPE.ARE_YOU_ALIVE:
+                this.send(id, MESSAGE_TYPE.I_AM_ALIVE, "-", true);
+                break;
+            case MESSAGE_TYPE.I_AM_ALIVE:
+                // {id} is alive
+                break;
+            default :
+                for(;i<L;i++) {
+                    M[i].call(this, id, type, payload);
+                }
+                break;
+        }
+    };
+
+    var PEER_ALIVE_ATTEMPTS = 3;
+
+    /**
+     * check if the connection to some peers is lost
+     */
+    function checkLostPeers(){
+        function repl(k,v) {
+            if (k === "node") return "*";
+            return v;
+        }
+        function timeout(id, obj) {
+            //console.log("{" + id + "} - " + JSON.stringify(obj, repl) );
+            var self = instance, i= 0, C = instance.onLostPeerCallbacks,
+                L = instance.onLostPeerCallbacks.length;
+            obj.timeoutThread = setTimeout(function () {
+                if (obj.missedCalls >= PEER_ALIVE_ATTEMPTS) {
+                    delete neighbors[id];
+                    for(;i<L;i++) {
+                        C[i].call(self, id);
+                    }
+                } else {
+                    obj.missedCalls = obj.missedCalls + 1;
+                }
+            }, 500);
+        };
+
+        var key, current, N = neighbors, self = instance;
+        for(key in N) {
+            current = N[key];
+            timeout(key, current);
+            self.send(key, MESSAGE_TYPE.ARE_YOU_ALIVE, "*", true);
+        }
     };
 
     var NEIGBORS_TIMEOUT = 120*1000; // 2 minutes
@@ -79,6 +162,7 @@ define([
         for (key in N) {
             if ((now - N[key].ts) > NEIGBORS_TIMEOUT) {
                 deleteKeys.push(key);
+                Utils.log("clean {" + key + "}");
             }
         }
         L = deleteKeys.length;
@@ -92,7 +176,9 @@ define([
      * @type {Object} {
      *      addr {String} : {
      *          node : {Peer},
-     *          ts : {number} // Last use in millis
+     *          ts : {number} // Last use in millis,
+     *          timeoutThread : {number} setTimeout-Thread
+     *          missedCalls: {number} // how often did we fail to keep-alive
      *      }
      * }
      */
@@ -104,17 +190,22 @@ define([
      * @param type {number}
      * @param msg {String}
      */
-    LocalPeer.prototype.send = function(id, type, msg){
+    LocalPeer.prototype.send = function(id, type, msg, ignoreTS){
+        if (!Utils.isDefined(ignoreTS)) ignoreTS = false;
         var N = neighbors, current, conn;
         if (id in N) {
             current = N[id];
             current.node.send({type:type, payload:msg});
-            current.ts = Date.now();
+            if (!ignoreTS) {
+                current.ts = Date.now();
+            }
         } else {
             conn = this.peer.connect(id);
             current = {
                 ts : Date.now(),
-                node : conn
+                node : conn,
+                missedCalls : 0,
+                timeoutThread : null
             }
             N[id] = current;
             conn.on("open", function () {
@@ -122,6 +213,24 @@ define([
             });
         }
     };
+
+    /**
+     * @param callback {function} (id, type, message)
+     */
+    LocalPeer.prototype.onMessage = function (callback) {
+        this.onMessageCallbacks.push(callback);
+    };
+
+    /**
+     * @param callback {function} (id)
+     */
+    LocalPeer.prototype.onPeerLost = function (callback) {
+        this.onLostPeerCallbacks.push(callback);
+    };
+
+    /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        I N T E R F A C E
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
     return {
         load: function (cb) {

@@ -26,7 +26,20 @@ define([
                             "<h2>" + name + "</h2>"
                         );
 
-                        LocalPeer.load(function (peer) {
+                        LocalPeer.load(function (peer, bootstrap) {
+                            var i = 0, L = bootstrap.length;
+                            for(;i<L;i++) {
+                                peer.send(bootstrap[i], 5, "hello");
+                            }
+
+                            peer.onMessage(function(id, type, msg) {
+                                console.log("{"+id+"}[" + type+"][" + msg + "]");
+                            });
+
+                            peer.onPeerLost(function (id) {
+                                console.log("lost:" + id);
+                            });
+
 
                         });
 
