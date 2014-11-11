@@ -64,17 +64,77 @@ define([
                 }
             }
             _init();
+            setInterval(cleanNeighbors, 60*1000); // every minute
         });
     };
 
+    var NEIGBORS_TIMEOUT = 120*1000; // 2 minutes
+
+    /**
+     * Checks for neighbors that are too old and removes them
+     */
+    function cleanNeighbors() {
+        var key, i=0, L, now = Date.now(),
+            deleteKeys = [], N = neighbors;
+        for (key in N) {
+            if ((now - N[key].ts) > NEIGBORS_TIMEOUT) {
+                deleteKeys.push(key);
+            }
+        }
+        L = deleteKeys.length;
+        for (;i<L;i++) {
+            delete N[deleteKeys[i]];
+        }
+    };
+
+    /**
+     *
+     * @type {Object} {
+     *      addr {String} : {
+     *          node : {Peer},
+     *          ts : {number} // Last use in millis
+     *      }
+     * }
+     */
+    var neighbors = {};
+
+    /**
+     * Sends a message to the given node
+     * @param id {String}
+     * @param type {number}
+     * @param msg {String}
+     */
+    LocalPeer.prototype.send = function(id, type, msg){
+        var N = neighbors, current, conn;
+        if (id in N) {
+            current = N[id];
+            current.node.send({type:type, payload:msg});
+            current.ts = Date.now();
+        } else {
+            conn = this.peer.connect(id);
+            current = {
+                ts : Date.now(),
+                node : conn
+            }
+            N[id] = current;
+            conn.on("open", function () {
+                conn.send({type:type, payload:msg});
+            });
+        }
+    };
+
     return {
-        get: function (cb) {
+        load: function (cb) {
             if (instance === null) {
                 instance = new LocalPeer();
                 callback = cb;
             } else {
                 cb.call(instance, instance, []);
             }
+        },
+        get: function () {
+            if (instance === null) throw "LocalPeer is not loaded!";
+            return instance;
         }
     };
 });

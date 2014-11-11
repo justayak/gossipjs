@@ -26,7 +26,7 @@ define([
                             "<h2>" + name + "</h2>"
                         );
 
-                        LocalPeer.get(function (peer) {
+                        LocalPeer.load(function (peer) {
 
                         });
 
