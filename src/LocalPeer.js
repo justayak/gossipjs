@@ -64,6 +64,9 @@ define([
                     log("bootstrapping: " + JSON.stringify(bsNodes));
                     self.bootstrap = bsNodes;
                     callback.call(self, self, bsNodes);
+                    for(i=0,L=onReadyCallbacks.length;i<L;i++){
+                        onReadyCallbacks.call(self);
+                    }
                 } else {
                     setTimeout(_init, 100);
                 }
@@ -232,6 +235,8 @@ define([
         I N T E R F A C E
        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+    var onReadyCallbacks = [];
+
     return {
         load: function (cb) {
             if (instance === null) {
@@ -244,6 +249,14 @@ define([
         get: function () {
             if (instance === null) throw "LocalPeer is not loaded!";
             return instance;
+        },
+        onReady: function (callback) {
+            if (instance === null) {
+                onReadyCallbacks.push(callback);
+            } else {
+                callback.call(instance);
+            }
+
         }
     };
 });

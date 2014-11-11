@@ -4,8 +4,9 @@
 define([
     "config",
     "utils",
-    "LocalPeer"
-], function (Config, Utils, LocalPeer) {
+    "LocalPeer",
+    "protocol/t_man"
+], function (Config, Utils, LocalPeer, TMan) {
 
     return {
 
