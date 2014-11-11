@@ -56,9 +56,16 @@ define([
 
                                 // TMAN
 
-                                peers = _.orderBy(TMan.getPeers(), function (e) {
+                                peers = TMan.getPeers();
+                                for(var i = 0; i < peers.length; i++) {
+                                    if (!("profile" in peers[i])){
+                                        peers[i].profile = Number.MAX_VALUE;
+                                    }
+                                }
+                                peers = _.sortBy(peers, function (e) {
                                     return e.profile;
                                 });
+
                                 html = "<div>TMAN [" + peers.length +"]</div>";
 
                                 for(var i = 0; i < peers.length; i++) {
