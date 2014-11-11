@@ -2,6 +2,7 @@
  * Created by Julian on 11/11/2014.
  */
 require.config({
+    urlArgs: "bust=" + (new Date()).getTime(),
     baseUrl: '../src',
     paths: {
         spec: "../jasmine/spec",
@@ -15,7 +16,8 @@ require([
     "jQuery",
     "underscore",
     "peer",
-    "spec/PeerSamplingServiceSpec"], function (a,b,c,d) {
+    "spec/PeerSamplingServiceSpec",
+    "config"], function (a,b,c,d, Config) {
 
     jasmine.getEnv().execute();
 

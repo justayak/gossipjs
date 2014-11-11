@@ -12,8 +12,18 @@ define([
     var name = null;
     var port = null;
     var isSet = false;
+    var isTestingEnv = false;
 
     return {
+
+        testingEnv: function (test) {
+            if (arguments.length > 0) {
+                isTestingEnv = test;
+            } else {
+                return isTestingEnv;
+            }
+        },
+
         /**
          *
          * @param debug

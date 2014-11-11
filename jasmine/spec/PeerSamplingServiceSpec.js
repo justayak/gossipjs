@@ -60,15 +60,18 @@ Gossip.Peer = {
 };*/
 
 define([
-    "protocol/peerSamplingService"
-], function(PSS){
+    "protocol/peerSamplingService",
+    "config"
+], function(PSS, Config){
     /**
      * Created by Julian on 11/7/2014.
      */
     describe("PeerSamplingService", function () {
 
+        Config.testingEnv(true);
+
         var c = 5;
-        PSS.init();
+        PSS.init({c:c});
 
         var view1, view2, view3, view4, view5;
 

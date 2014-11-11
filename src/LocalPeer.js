@@ -185,7 +185,6 @@ define([
         for (;i<L;i++) {
             delete N[deleteKeys[i]];
         }
-        console.log("neighbors: ",  neighbors);
     };
 
     /**
@@ -261,8 +260,18 @@ define([
             }
         },
         get: function () {
-            if (instance === null) throw "LocalPeer is not loaded!";
-            return instance;
+            if (Config.testingEnv()) {
+                // MOOKUP
+                return {
+                    on: function () {},
+                    send: function () {},
+                    onPeerLost: function () {},
+                    onMessage: function() {}
+                }
+            } else {
+                if (instance === null) throw "LocalPeer is not loaded!";
+                return instance;
+            }
         },
         onReady: function (callback) {
             if (instance === null) {

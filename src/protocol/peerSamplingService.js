@@ -76,6 +76,15 @@ define([
      */
     function init(options) {
         var def = Utils.isDefined, policy = DEFAULT_POLICY, bootstrap=[]; // ["A", "B", ..]
+        if (def(options)){
+            c = def(options.c) ? options.c : c;
+            T = def(options.T) ? options.T : T;
+            if (def(options.policy)) {
+                policy = options.policy;
+            }
+            bootstrap = def(options.bootstrap) ? options.bootstrap : bootstrap;
+        }
+
         peer = LocalPeer.get();
 
         peer.onPeerLost(function (id) {
@@ -89,14 +98,6 @@ define([
         });
 
         myAddress = peer.name;
-        if (def(options)){
-            c = def(options.c) ? options.c : c;
-            T = def(options.T) ? options.T : T;
-            if (def(options.policy)) {
-                policy = options.policy;
-            }
-            bootstrap = def(options.bootstrap) ? options.bootstrap : bootstrap;
-        }
 
         for(var i=0; i < bootstrap.length; i++) {
             view.push({addr: bootstrap[i], hopCount:1});

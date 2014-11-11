@@ -3,6 +3,7 @@
  */
 requirejs.config({
     //By default load any module IDs from js/lib
+    urlArgs: "bust=" + (new Date()).getTime(),
     baseUrl: 'src',
     paths: {
         jQuery : "//code.jquery.com/jquery-2.0.3.min",
