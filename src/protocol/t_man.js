@@ -9,7 +9,7 @@ define([
 ], function (Utils, LocalPeer, PeerSamplingService, MESSAGE_TYPE) {
 
 
-    var myProfile = 5;
+    var myProfile = Utils.randomInt(1,99);
 
     var peer = null;
 
@@ -20,7 +20,7 @@ define([
     function init(options) {
 
         PeerSamplingService.init({
-            myProfile : myProfile,
+            profile : myProfile,
             bootstrap : options.bootstrap
         });
 

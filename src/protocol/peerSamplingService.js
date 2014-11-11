@@ -206,6 +206,9 @@ define([
         function shiftInto(from, to) {
             var e = from.shift();
             if (e.addr in tempLookup) {
+                if (isDef(e.profile) && !isDef(tempLookup[e.addr].profile)) {
+                    tempLookup[e.addr].profile = e.profile;
+                }
                 if (e.hopCount >= tempLookup[e.addr].hopCount){
                     return false;
                 }
@@ -300,16 +303,19 @@ define([
      * @returns {string}
      */
     function serialize(buffer) {
-        /*if (buffer.length === 0) return "#";
+        if (buffer.length === 0) return "#";
         var result = "", i = 0, L = buffer.length;
         for (;i<L;i++){
-            result += buffer[i].addr + ":" + buffer[i].hopCount;
+            result += buffer[i].addr + "#" + buffer[i].hopCount;
+            if (Utils.isDefined(buffer[i].profile)) {
+                result += "#" + JSON.stringify(buffer[i].profile);
+            }
             if (i < L-1){
-                result += ",";
+                result += "§";
             }
         }
-        return result;*/
-        return JSON.stringify(buffer);
+        return result;
+        //return JSON.stringify(buffer);
     };
 
     /**
@@ -318,19 +324,23 @@ define([
      * @returns {Array}
      */
     function deserialize(str) {
-        /*if (str === "#") return [];
+        if (str === "#") return [];
         var buffer = [];
-        var U = str.split(",");
-        var i = 0, L = U.length, current;
+        var U = str.split("§");
+        var i = 0, L = U.length, current, obj;
         for(;i<L;i++){
-            current = U[i].split(":");
-            buffer.push({
+            current = U[i].split("#");
+            obj = {
                 addr : current[0],
                 hopCount : parseInt(current[1],10)
-            });
+            };
+            if (current.length === 3) {
+                obj.profile = JSON.parse(current[2]);
+            }
+            buffer.push(obj);
         }
-        return buffer;*/
-        return JSON.parse(str);
+        return buffer;
+        //return JSON.parse(str);
     };
 
     var bufferQueue = [];

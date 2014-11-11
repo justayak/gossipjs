@@ -12,7 +12,7 @@ define([
         var c = 5;
         PSS.init({c:c});
 
-        var view1, view2, view3, view4, view5;
+        var view1, view2, view3, view4, view5, view6;
 
         beforeEach(function() {
             view2 = [{addr:"E", hopCount:7},
@@ -34,7 +34,11 @@ define([
             ];
             view5 = [
                 {addr:"b", hopCount:1}
-            ]
+            ];
+            view6 = [
+                {addr:"b", hopCount:1, profile:{c:1}},
+                {addr:"a", hopCount:2, profile:{c:5}}
+            ];
         });
 
         it("should merge distinct sets correctly", function(){
@@ -100,20 +104,10 @@ define([
             expect(result).toEqual(["D","C","Q", "B", "A"]);
         });
 
-        it("should serialize correctly", function () {
-            var ser = PSS.inner.serialize(view3);
-            expect(ser).toEqual('[{"addr":"A","hopCount":1},{"addr":"Q","hopCount":4},{"addr":"B","hopCount":7}]');
-        });
-
         it("should serialize empty list correctly", function () {
             var ser = PSS.inner.serialize;
             var des = PSS.inner.deserialize;
             expect(des(ser([]))).toEqual([]);
-        });
-
-        it("should deserialize correctly", function () {
-            var des = PSS.inner.deserialize('[{"addr":"A","hopCount":1},{"addr":"Q","hopCount":4},{"addr":"B","hopCount":7}]');
-            expect(des).toEqual(view3);
         });
 
         it("should serialize/deserialize symetrically", function () {
@@ -122,6 +116,15 @@ define([
             expect(des(ser(view1))).toEqual(view1);
             expect(des(ser(view2))).toEqual(view2);
             expect(des(ser(view3))).toEqual(view3);
+        });
+
+        it("should serialize/deserialize symetrically with profile data", function () {
+            var ser = PSS.inner.serialize;
+            var des = PSS.inner.deserialize;
+            var a = ser(view6);
+            console.log(a);
+            console.log(des(a))
+            expect(des(ser(view6))).toEqual(view6);
         });
 
     });
