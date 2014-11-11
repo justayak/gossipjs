@@ -51,10 +51,11 @@ define([
                 case "peer-unavailable":
                     var i= 0,L=self.onLostPeerCallbacks.length;
                     var cb = self.onLostPeerCallbacks;
-                    var peer = err.message.substr(26);
+                    var peer = e.message.substr(26);
                     delete neighbors[peer];
+                    recentlyLost[peer] = Date.now();
                     for(;i<L;i++) {
-                        cb.call(self, peer);
+                        cb[i].call(self, peer);
                     }
                     break
                 default :
@@ -120,7 +121,7 @@ define([
         }
         switch (type){
             case MESSAGE_TYPE.ARE_YOU_ALIVE:
-                this.send(id, MESSAGE_TYPE.I_AM_ALIVE, "-", true);
+                this.send(id, MESSAGE_TYPE.I_AM_ALIVE, "-", {ignoreTS:true});
                 break;
             case MESSAGE_TYPE.I_AM_ALIVE:
                 // {id} is alive
@@ -139,10 +140,7 @@ define([
      * check if the connection to some peers is lost
      */
     function checkLostPeers(){
-        function repl(k,v) {
-            if (k === "node") return "*";
-            return v;
-        }
+
         function timeout(id, obj) {
             //console.log("{" + id + "} - " + JSON.stringify(obj, repl) );
             var self = instance, i= 0, C = instance.onLostPeerCallbacks,
@@ -150,6 +148,7 @@ define([
             obj.timeoutThread = setTimeout(function () {
                 if (obj.missedCalls >= PEER_ALIVE_ATTEMPTS) {
                     delete neighbors[id];
+                    recentlyLost[id] = Date.now();
                     for(;i<L;i++) {
                         C[i].call(self, id);
                     }
@@ -163,8 +162,22 @@ define([
         for(key in N) {
             current = N[key];
             timeout(key, current);
-            self.send(key, MESSAGE_TYPE.ARE_YOU_ALIVE, "*", true);
+            self.send(key, MESSAGE_TYPE.ARE_YOU_ALIVE, "*", {ignoreTS:true});
         }
+
+        // ~~~~~~~~~~~~~~~~
+        // Clean "recentlyLost"-List
+        var now = Date.now(), deleteRecentlyLost = [];
+        for(key in recentlyLost) {
+            if (now - recentlyLost[key] > RECENTLY_LOST_TIMEOUT) {
+                deleteRecentlyLost.push(key);
+            }
+        }
+        var i = 0, L = deleteRecentlyLost.length;
+        for(;i<L;i++){
+            delete recentlyLost[deleteRecentlyLost[i]];
+        }
+
     };
 
     var NEIGBORS_TIMEOUT = 120*1000; // 2 minutes
@@ -200,18 +213,39 @@ define([
      */
     var neighbors = {};
 
+    var RECENTLY_LOST_TIMEOUT = 6 * 1000; // 6 secs timeout
+
+    /**
+     * Make sure that we do not reintroduce a recently lost peer through
+     * other ppls message
+     * @type {Object} {
+     *      addr {String} : ts: {number} // in millis
+     * }
+     */
+    var recentlyLost = {};
+
+    LocalPeer.prototype.isRecentlyLost = function (id) {
+        return id in recentlyLost;
+    };
+
     /**
      * Sends a message to the given node
      * @param id {String}
      * @param type {number}
      * @param msg {String}
      */
-    LocalPeer.prototype.send = function(id, type, msg, ignoreTS){
-        if (!Utils.isDefined(ignoreTS)) ignoreTS = false;
+    LocalPeer.prototype.send = function(id, type, msg, options){
+        var ignoreTS = false;
+        var piggybackFunc = null;
+        if (Utils.isDefined(options)) {
+            if ("ignoreTS" in options) ignoreTS = options.ignoreTS;
+            if ("piggybackFunc" in options) piggybackFunc = options.piggybackFunc;
+
+        }
         var N = neighbors, current, conn;
         if (id in N) {
             current = N[id];
-            current.node.send({type:type, payload:msg});
+            current.node.send(_createMessage(type, msg, piggybackFunc));
             if (!ignoreTS) {
                 current.ts = Date.now();
             }
@@ -225,8 +259,23 @@ define([
             }
             N[id] = current;
             conn.on("open", function () {
-                conn.send({type:type, payload:msg});
+                conn.send(_createMessage(type, msg, piggybackFunc));
             });
+        }
+    };
+
+    /**
+     *
+     * @param type {number}
+     * @param msg {string}
+     * @param piggybackFunc {function}
+     * @private
+     */
+    function _createMessage(type, msg, piggybackFunc) {
+        if (Utils.isDefined(piggybackFunc)) {
+            return {type:type, payload:msg, piggy:piggybackFunc()};
+        } else {
+            return {type:type, payload:msg};
         }
     };
 
@@ -261,7 +310,7 @@ define([
         },
         get: function () {
             if (Config.testingEnv()) {
-                // MOOKUP
+                // MOCK-UP
                 return {
                     on: function () {},
                     send: function () {},

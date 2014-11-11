@@ -133,7 +133,6 @@ define([
                 break;
             case POLICY.SELECT_VIEW.RAND:
                 selectionPolicy.selectView = function (v) {
-                    if (myAddress === "a") console.log(JSON.stringify(v));
                     if (!def(v)) v = view;
                     return _.first(rand.call(this,v,false), c);
                 };
@@ -350,13 +349,14 @@ define([
      */
     function sanitize(buffer) {
         var i = 0, L = buffer.length;
+        var result = [], addr;
         for(;i<L;i++) {
-            if (buffer[i].addr === myAddress) {
-                buffer.splice(i,1);
-                break;
+            addr = buffer[i].addr;
+            if (addr !== myAddress && !peer.isRecentlyLost(addr)) {
+                result.push(buffer[i]);
             }
         }
-        return buffer;
+        return result;
     }
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

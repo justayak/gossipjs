@@ -44,7 +44,6 @@ define([
 
         it("should merge correctly (from bug)", function () {
             var result = PSS.inner.merge(view4,view5);
-            console.log(result);
             expect(result).toEqual(view4);
         });
 
