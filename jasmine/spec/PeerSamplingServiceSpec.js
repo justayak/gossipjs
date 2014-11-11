@@ -39,7 +39,7 @@ define([
 
         it("should merge distinct sets correctly", function(){
             var result = _.map(PSS.inner.merge(view1, view2), function(e){return e.addr});
-            expect(result).toEqual(["H", "B", "G", "A", "E"]);
+            expect(result).toEqual(["H", "B", "G", "A", "E", "C","F","D"]);
         });
 
         it("should merge correctly (from bug)", function () {
@@ -50,7 +50,7 @@ define([
 
         it("should merge sets with equal elements correctly", function () {
             var result = PSS.inner.merge(view1, view3);
-            expect(_.size(result)).toEqual(c);
+            expect(_.size(result)).toEqual(5);
             expect(result[0]).toBe(view3[0]); // A
             expect(result[1]).toBe(view1[1]); // B
             expect(result[2]).toBe(view3[1]); // Q

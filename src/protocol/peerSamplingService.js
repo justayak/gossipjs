@@ -207,7 +207,8 @@ define([
             to.push(e);
             return true;
         }
-        while (result.length < c && (sort1.length > 0 || sort2.length > 0)) {
+        //while (result.length < c && (sort1.length > 0 || sort2.length > 0)) {
+        while ((sort1.length > 0 || sort2.length > 0)) {
             var left = sort1[0];
             var right = sort2[0];
             if (isDef(left) && isDef(right)) {
