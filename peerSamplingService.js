@@ -266,7 +266,7 @@
             peer = ("peer" in options) ? options.peer : peer;
             view = ("bootstrap" in options) ?
                 _.map(options.bootstrap, function (n) {
-                    return {addr: n, hopCount:0};
+                    return {addr: n, hopCount:2};
                 }) : [];
             policy = ("policy" in options) ?
                 options.policy : DEFAULT_POLICY;
