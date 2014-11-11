@@ -65,7 +65,7 @@ define([
                     self.bootstrap = bsNodes;
                     callback.call(self, self, bsNodes);
                     for(i=0,L=onReadyCallbacks.length;i<L;i++){
-                        onReadyCallbacks.call(self);
+                        onReadyCallbacks.call(self, self);
                     }
                 } else {
                     setTimeout(_init, 100);
@@ -254,7 +254,7 @@ define([
             if (instance === null) {
                 onReadyCallbacks.push(callback);
             } else {
-                callback.call(instance);
+                callback.call(instance, instance);
             }
 
         }
