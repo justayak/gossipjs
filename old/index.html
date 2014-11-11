@@ -1,0 +1,96 @@
+<html>
+    <head lang="en">
+        <meta charset="UTF-8">
+        <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+        <script src="gossip_utils.js"></script>
+        <script src="peerSamplingService.js"></script>
+        <script src="gossip.js"></script>
+        <script src="tman.js"></script>
+    </head>
+    <body>
+        <div>
+            <div id="start">
+                You:
+                <input id="me"/><button id="connectBtn">connect</button>
+            </div>
+            <div id="after">
+                <div>
+                    <div>
+                        <strong id="meFinal"></strong><br/>
+                        <div id="PSS">
+
+                        </div>
+                    </div>
+                    <div id="content">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script>
+
+        function addOther(other){
+            $('#others').html($('#others').html() + ', ' + other);
+        };
+
+        function addMessage(msg){
+            $('#content').html($('#content').html() + '<br/>' + msg);
+        };
+
+        $(function(){
+
+            Gossip.options({
+                debug: true
+            });
+
+            $('#after').hide();
+            $('#connectBtn').on('click', function(){
+                var name = $('#me').val();
+                var profile = randomInt(0,15);
+                if (name.length > 0) {
+                    $('#after').show();
+                    $('#meFinal').html(name + " - " + profile);
+                    $('#start').hide();
+                    Gossip.init({
+                        name : name,
+                        host : '85.25.215.113',
+                        port : 9000,
+                        bootstrapPort: 9001
+                    }, function(bootstrap){
+
+
+                        var PSS = Gossip.PeerSamplingService;
+                        PSS.init({
+                            bootstrap : bootstrap
+                        }, function(){
+
+                            observeConnector(PSS.inner.connector, "PSS");
+
+                        });
+
+                    });
+                }
+            });
+
+        });
+
+        function observeConnector(connector, domID){
+            setInterval(function(){
+                var view = connector.view;
+                var i = 0, L = view.length;
+                var data = "";
+                for (;i<L;i++) {
+                    data += JSON.stringify(view[i], function(key,v){return (key === "node") ? "node" : v;});
+                    data += "<br/>";
+                }
+                $("#" + domID).html(data);
+            }, 250);
+        };
+
+        function randomInt(min, max){
+            return Math.floor(Math.random() * (max-min+1)) + min;
+        }
+
+    </script>
+</html>
