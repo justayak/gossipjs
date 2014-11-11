@@ -48,7 +48,7 @@ define([
 
                             setInterval(function () {
                                 var peers = PeerSamplingService.getPeers();
-                                var html = "";
+                                var html = "<div>PeerSamplingService [" + peers.length +"]</div>";
                                 for(var i = 0; i < peers.length; i++) {
                                     html += JSON.stringify(peers[i]) + "</br>";
                                 }
