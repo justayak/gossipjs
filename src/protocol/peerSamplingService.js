@@ -133,13 +133,13 @@ define([
                 break;
             case POLICY.SELECT_VIEW.RAND:
                 selectionPolicy.selectView = function (v) {
+                    if (myAddress === "a") console.log(v);
                     if (!def(v)) v = view;
                     return _.first(rand.call(this,v,false), c);
                 };
                 break;
             case POLICY.SELECT_VIEW.TAIL:
                 selectionPolicy.selectView = function (v) {
-                    if (myAddress === "a") console.log(v);
                     if (!def(v)) v = view;
                     return _.first(tail.call(this,v,false),c);
                 };
