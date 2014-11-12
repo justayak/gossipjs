@@ -2,9 +2,9 @@
  * Created by Julian on 11/11/2014.
  */
 define([
-    "utils",
-    "LocalPeer",
-    "messageType"
+    "gossip/utils",
+    "gossip/LocalPeer",
+    "gossip/messageType"
 ], function (Utils, LocalPeer, MESSAGE_TYPE) {
 
     /**

@@ -8,7 +8,8 @@ requirejs.config({
     paths: {
         jQuery : "//code.jquery.com/jquery-2.0.3.min",
         underscore : "//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore-min",
-        peer : "//cdn.peerjs.com/0.3/peer"
+        peer : "//cdn.peerjs.com/0.3/peer",
+        gossip : ''
     }
 });
 
@@ -16,11 +17,11 @@ define([
     "jQuery",
     "underscore",
     "peer",
-    "utils",
-    "config",
-    "externals",
-    "LocalPeer",
-    "gui"],
+    "gossip/utils",
+    "gossip/config",
+    "gossip/externals",
+    "gossip/LocalPeer",
+    "gossip/gui"],
 function (a,b,c, Utils, Config, d, LocalPeer, gui) {
 
     Config.debug(true);

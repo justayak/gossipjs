@@ -2,11 +2,11 @@
  * Created by Julian on 11/11/2014.
  */
 define([
-    "config",
-    "utils",
-    "LocalPeer",
-    "protocol/t_man",
-    "protocol/peerSamplingService"
+    "gossip/config",
+    "gossip/utils",
+    "gossip/LocalPeer",
+    "gossip/protocol/t_man",
+    "gossip/protocol/peerSamplingService"
 ], function (Config, Utils, LocalPeer, TMan, PeerSamplingService) {
 
     return {

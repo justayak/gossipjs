@@ -2,9 +2,9 @@
  * Created by Julian on 11/11/2014.
  */
 define([
-    "utils",
-    "config",
-    "messageType"
+    "gossip/utils",
+    "gossip/config",
+    "gossip/messageType"
 ], function (Utils, Config, MESSAGE_TYPE) {
 
     var instance = null;

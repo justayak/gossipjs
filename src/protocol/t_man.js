@@ -2,10 +2,10 @@
  * Created by Julian on 11/11/2014.
  */
 define([
-    "utils",
-    "LocalPeer",
-    "protocol/peerSamplingService",
-    "messageType"
+    "gossip/utils",
+    "gossip/LocalPeer",
+    "gossip/protocol/peerSamplingService",
+    "gossip/messageType"
 ], function (Utils, LocalPeer, PeerSamplingService, MESSAGE_TYPE) {
 
     /**
