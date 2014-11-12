@@ -4,7 +4,7 @@
 requirejs.config({
     //By default load any module IDs from js/lib
     urlArgs: "bust=" + (new Date()).getTime(),
-    baseUrl: './',
+    baseUrl: '',
     paths: {
         jQuery : "//code.jquery.com/jquery-2.0.3.min",
         underscore : "//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore-min",
