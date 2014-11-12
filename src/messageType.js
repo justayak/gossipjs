@@ -8,6 +8,7 @@ define([], function () {
         PSS_BUFFER : 2,
         PSS_BUFFER_PULL: 3,
         TMAN_BUFFER: 4,
-        TMAN_BUFFER_PULL: 5
+        TMAN_BUFFER_PULL: 5,
+        MULTICAST: 6
     }
 });

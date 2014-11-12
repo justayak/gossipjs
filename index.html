@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <title></title>
     <script data-main="src/gossip.js?demo=1" src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.15/require.min.js"></script>
+    <style>
+        .left {
+            float: left;
+            width: 50%;
+        }
+
+        .right {
+            float: right;
+            width: 50%;
+        }
+    </style>
 </head>
 <body>
     <h1>GossipJS</h1>
@@ -11,11 +22,21 @@
         You:
         <input id="me"/><button id="connectBtn">connect</button>
     </div>
-    <div id="data">
+    <div id="live">
+        <div class="left">
+            <input id="msg"/><button id="sendBtn">connect</button>
+            <div id="chat">
 
-    </div>
-    <div id="tman">
+            </div>
+        </div>
+        <div class="right">
+            <div id="data">
 
+            </div>
+            <div id="tman">
+
+            </div>
+        </div>
     </div>
 </body>
 </html>

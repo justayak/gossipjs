@@ -443,6 +443,9 @@ define([
         getPeers: function () {
             return view;
         },
+        multicast: function (message) {
+            peer.multicast(view, message);
+        },
         inner: {
             merge: merge,
             rand: rand,

@@ -13,7 +13,7 @@ define([
 
         init : function(){
             $(function () {
-
+                $("#live").hide();
                 $("#connectBtn").on("click", function () {
                     var name = $("#me").val();
                     if (name.length > 0) {
@@ -31,6 +31,45 @@ define([
 
                         LocalPeer.load(function (peer, bootstrap) {
 
+                            var nextMID = 0;
+                            var messageBuffer = {};
+
+                            function addToChat(msg) {
+                                var html = $("#chat").html();
+                                html += "<b>" + msg.addr + "</b>:" + msg.msg + "</br>";
+                                $("#chat").html(html);
+                            }
+
+                            function createKey(message) {
+                                return message.addr + "_" + message.id;
+                            };
+
+                            function isMine(message) {
+                                return message.addr === peer.name;
+                            }
+
+                            peer.onMulticast(function (id, message) {
+                                if (!isMine(message)) {
+                                    var key = createKey(message);
+                                    if (!(key in messageBuffer)) {
+                                        addToChat(message);
+                                        TMan.multicast(message);
+                                    }
+                                }
+                            });
+
+                            $("#live").show();
+
+                            $("#sendBtn").on("click", function () {
+                                var txt = $("#msg").val();
+                                if (txt.length > 0) {
+
+                                    TMan.multicast({addr: peer.name, msg: txt, id:nextMID++});
+
+                                    addToChat({addr: peer.name, msg:txt});
+                                    $("#msg").val("");
+                                }
+                            });
 
                             TMan.init({
                                 bootstrap: bootstrap,
