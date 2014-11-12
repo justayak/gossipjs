@@ -52,6 +52,7 @@ define([
                                 if (!isMine(message)) {
                                     var key = createKey(message);
                                     if (!(key in messageBuffer)) {
+                                        messageBuffer[key] = true;
                                         addToChat(message);
                                         TMan.multicast(message);
                                     }
