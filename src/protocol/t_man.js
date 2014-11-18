@@ -194,6 +194,8 @@ define([
             buffer = merge(view, [myDescriptor]);
             buffer = merge(buffer, randomView());
             sendBufferTo(buffer, p);
+
+            // TODO we need to request the peers buffer!
         }
     };
 
