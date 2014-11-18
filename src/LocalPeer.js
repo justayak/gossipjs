@@ -2,9 +2,9 @@
  * Created by Julian on 11/11/2014.
  */
 define([
-    "utils",
-    "config",
-    "messageType"
+    "gossip/utils",
+    "gossip/config",
+    "gossip/messageType"
 ], function (Utils, Config, MESSAGE_TYPE) {
 
     var instance = null;
@@ -126,6 +126,14 @@ define([
             case MESSAGE_TYPE.I_AM_ALIVE:
                 // {id} is alive
                 break;
+            case MESSAGE_TYPE.MULTICAST:
+                if (_.isString(payload)) {
+                    payload = JSON.parse(payload);
+                }
+                for(i=0;i<onMulticastCallbacks.length;i++) {
+                    onMulticastCallbacks[i].call(instance, id, payload);
+                }
+                break;
             default :
                 for(;i<L;i++) {
                     M[i].call(this, id, type, payload);
@@ -235,6 +243,12 @@ define([
      * @param msg {String}
      */
     LocalPeer.prototype.send = function(id, type, msg, options){
+        var temp = id;
+        if (arguments.length === 1) {
+            id = temp.addr;
+            type = temp.type;
+            msg = temp.msg;
+        }
         var ignoreTS = false;
         var piggybackFunc = null;
         if (Utils.isDefined(options)) {
@@ -291,6 +305,27 @@ define([
      */
     LocalPeer.prototype.onPeerLost = function (callback) {
         this.onLostPeerCallbacks.push(callback);
+    };
+
+    /**
+     * @param view
+     * @param message
+     */
+    LocalPeer.prototype.multicast = function (buffer, message) {
+        var i = 0, L = buffer.length;
+        for(;i<L;i++) {
+            this.send(buffer[i].addr, MESSAGE_TYPE.MULTICAST, JSON.stringify(message));
+        }
+    };
+    
+    var onMulticastCallbacks = [];
+
+    /**
+     *
+     * @param callback {function} (addr {String}, payload {Object} )
+     */
+    LocalPeer.prototype.onMulticast = function (callback) {
+        onMulticastCallbacks.push(callback);
     };
 
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

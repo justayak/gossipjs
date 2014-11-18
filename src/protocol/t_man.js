@@ -2,10 +2,10 @@
  * Created by Julian on 11/11/2014.
  */
 define([
-    "utils",
-    "LocalPeer",
-    "protocol/peerSamplingService",
-    "messageType"
+    "gossip/utils",
+    "gossip/LocalPeer",
+    "gossip/protocol/peerSamplingService",
+    "gossip/messageType"
 ], function (Utils, LocalPeer, PeerSamplingService, MESSAGE_TYPE) {
 
     /**
@@ -88,35 +88,6 @@ define([
             result.push(lookup[key]);
         }
         return result;
-
-        /*
-        var lookup = {}, result = [], i, L1=view1.length, L2=view2.length, current;
-        for(i=0;i<L1;i++) {
-            current = view1[i];
-            if (!(current.addr in lookup)) {
-                result.push(current);
-                lookup[current.addr] = ("profile" in current) ?
-                    current.profile : null;
-            } else {
-                if (!Utils.isDefined(current.profile)) {
-                    current.profile = lookup[current.addr];
-                }
-            }
-        }
-        for(i=0;i<L2;i++) {
-            current = view2[i];
-            if (!(current.addr in lookup)) {
-                result.push(current);
-                lookup[current.addr] = ("profile" in current) ?
-                    current.profile : null;
-            } else {
-                if (!Utils.isDefined(current.profile)) {
-                    current.profile = lookup[current.addr];
-                }
-            }
-        }
-        return result;
-        */
     };
 
     /**
@@ -254,6 +225,9 @@ define([
         init: init,
         getPeers: function () {
             return view;
+        },
+        multicast: function (message) {
+            peer.multicast(view, message);
         },
         inner: {
             merge: merge

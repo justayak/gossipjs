@@ -2,7 +2,7 @@
  * Created by Julian on 11/11/2014.
  */
 define([
-    "config"
+    "gossip/config"
 ], function (Config) {
     return {
 
